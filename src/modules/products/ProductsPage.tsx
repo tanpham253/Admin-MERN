@@ -1,4 +1,4 @@
-import { Button, Flex, Form, Input, InputNumber, Modal, Pagination, Popconfirm, Select, Space, Table, Upload } from 'antd';
+import { Button, Flex, Form, Input, InputNumber, message, Modal, Pagination, Popconfirm, Select, Space, Table, Upload } from 'antd';
 import type { GetProp, TableProps, UploadFile, UploadProps } from 'antd';
 
 import { fetchBrands, fetchCategories, fetchCreate, fetchDelete, fetchProducts, updateData } from './product.service';
@@ -63,7 +63,6 @@ console.log('<<=== 🚀 queryCategories.data ===>>',queryCategories.data);
 const queryBrands = useQuery({
   queryKey: ['brands'],
   queryFn: ()=>fetchBrands()
-
 })
 
 
@@ -105,7 +104,7 @@ const handleModalAddOk = () => {
     const formData = new FormData();
     // Lặp qua tất cả các trường trong values và thêm chúng vào formData
     Object.entries(values).forEach(([key, value]) => {
-      formData.append(key, value);
+      formData.append(key, value instanceof Blob ? value : String(value));
     });
 
     fileList.forEach((file) => {
@@ -407,7 +406,7 @@ const columns: TableProps<ProductType>['columns'] = [
        <Select
             options={
               queryBrands.data &&
-              queryBrands.data.map((b) => {
+              queryBrands.data.map((b: { _id: any; brand_name: any; }) => {
                 return {
                   value: b._id,
                   label: b.brand_name,
@@ -589,7 +588,7 @@ const columns: TableProps<ProductType>['columns'] = [
        <Select
             options={
               queryBrands.data &&
-              queryBrands.data.map((b) => {
+              queryBrands.data.map((b: { _id: any; brand_name: any; }) => {
                 return {
                   value: b._id,
                   label: b.brand_name,

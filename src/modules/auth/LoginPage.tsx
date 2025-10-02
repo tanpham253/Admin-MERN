@@ -34,7 +34,7 @@ const onFinishFailed: FormProps<FieldType>['onFinishFailed'] = (errorInfo) => {
     labelCol={{ span: 8 }}
     wrapperCol={{ span: 16 }}
     style={{ maxWidth: 600 }}
-    initialValues={{ email: 'admin@gmail.com', password: 'CatFly@200miles', remember: true }}
+    initialValues={{ email: 'admin@gmail.com', password: '!Qaz123456', remember: true }}
     onFinish={onFinish}
     onFinishFailed={onFinishFailed}
     autoComplete="off"
@@ -51,7 +51,7 @@ const onFinishFailed: FormProps<FieldType>['onFinishFailed'] = (errorInfo) => {
     <Form.Item<FieldType>
       label="Password"
       name="password"
-      help='CatFly@200miles'
+      help='!Qaz123456'
       rules={[{ required: true, message: 'Please input your password!' }]}
     >
       <Input.Password />

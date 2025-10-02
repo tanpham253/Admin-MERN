@@ -1,5 +1,6 @@
 import apiClient from "../../libs/axiosClient";
 import type { BrandType, CategoryType, ProductDTO, ProductType } from "./product.type";
+import type { AxiosResponse } from "axios";
 
 
 export const fetchCategories = async (): Promise<CategoryType[]> => {
@@ -7,9 +8,10 @@ export const fetchCategories = async (): Promise<CategoryType[]> => {
  return response.data
 };
 
-export const fetchBrands = async (): Promise<BrandType[]> => {
-   const response = await apiClient.get(`/v1/brands`);
-   return response.data
+export const fetchBrands = async (): Promise<any> => {
+  const response = await apiClient.get(`/v1/brands`);
+  console.log("DEBUG brands raw response =>", response);
+  return response;
 };
 
 //Hàm get Sản phẩm
