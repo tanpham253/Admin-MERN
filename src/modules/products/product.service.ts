@@ -1,5 +1,6 @@
 import apiClient from "../../libs/axiosClient";
-import type { CategoryType, ProductType } from "./product.type";
+import type { BrandType, CategoryType, ProductDTO, ProductType } from "./product.type";
+import type { AxiosResponse } from "axios";
 
 
 export const fetchCategories = async (): Promise<CategoryType[]> => {

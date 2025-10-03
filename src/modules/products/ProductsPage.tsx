@@ -3,7 +3,7 @@ import type { GetProp, TableProps, UploadFile, UploadProps } from 'antd';
 
 import { fetchBrands, fetchCategories, fetchCreate, fetchDelete, fetchProducts, updateData } from './product.service';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ProductsResponse, ProductType } from './product.type';
+import type { ProductDTO, ProductsResponse, ProductType } from './product.type';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useAppMessage } from '../../stores/useAppMessage';
 import { useState } from 'react';
