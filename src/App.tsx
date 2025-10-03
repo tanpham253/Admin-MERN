@@ -66,7 +66,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" />} />
+        <Route path="/" element={<Navigate to="/orders" />} />
         {renderRoutes(routes)}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

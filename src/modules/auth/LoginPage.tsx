@@ -20,7 +20,7 @@ const LoginPage = () => {
   //gọi api login ở đây
    login(values.email, values.password, ()=>{
     //
-    navigate('/dashboard')
+    navigate('/orders')
    })
 };
 
