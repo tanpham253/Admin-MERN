@@ -182,11 +182,22 @@ const columns: TableProps<ProductType>['columns'] = [
     title: 'Thumbnail',
     key: 'thumbnail',
     dataIndex: 'thumbnail',
-    render: (_, record) => (
-      <>
-        <img height={40} width={40} src={`${import.meta.env.VITE_BACKEND_URL_STATIC}/${record.thumbnail}`} alt={record.product_name} />
-      </>
-    ),
+    render: (_, record) => {
+      let thumbnailUrl = record.thumbnail;
+      console.log('<<=== 🚀 thumbnailUrl ===>>',thumbnailUrl);
+      // detect if backend prefix is followed by another https:// URL
+      if (thumbnailUrl.startsWith("http://localhost:9000/https://")) {
+        thumbnailUrl = thumbnailUrl.replace("http://localhost:9000/", "");
+      }
+      return (
+        <img
+          height={40}
+          width={40}
+          src={thumbnailUrl}
+          alt={record.product_name}
+        />
+      );
+    },
   },
   {
     title: 'Name',
