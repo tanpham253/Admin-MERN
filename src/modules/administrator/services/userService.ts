@@ -16,6 +16,8 @@ export interface GetUsersParams {
   role?: 'staff' | 'admin';
   active?: boolean;
   search?: string;
+  sortField?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface GetUsersResponse {
@@ -38,6 +40,14 @@ export const userService = {
 
     if (params?.search) {
       queryParams.append('search', params.search);
+    }
+
+    if (params?.sortField) {
+      queryParams.append('sortField', params.sortField);
+    }
+
+    if (params?.sortOrder) {
+      queryParams.append('sortOrder', params.sortOrder);
     }
 
     const url = `${SUPABASE_URL}/functions/v1/get-users${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;

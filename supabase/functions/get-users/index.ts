@@ -24,11 +24,13 @@ Deno.serve(async (req: Request) => {
     const role = url.searchParams.get("role");
     const active = url.searchParams.get("active");
     const search = url.searchParams.get("search");
+    const sortField = url.searchParams.get("sortField") || "created_at";
+    const sortOrder = url.searchParams.get("sortOrder") || "desc";
 
     let query = supabase
       .from("users")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order(sortField, { ascending: sortOrder === "asc" });
 
     if (role && (role === "staff" || role === "admin")) {
       query = query.in("role", [role]);
