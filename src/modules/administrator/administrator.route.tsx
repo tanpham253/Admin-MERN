@@ -1,6 +1,5 @@
 import { GroupOutlined, UserOutlined } from "@ant-design/icons";
 import type { RouteItem } from "../../routes";
-import UserListPage from "./pages/UserListPage";
 
 export const routesAdministrator: RouteItem[] = [
   {
@@ -18,7 +17,7 @@ export const routesAdministrator: RouteItem[] = [
         label: 'Users',
         icon: <UserOutlined />,
         key: 'administrators-users',
-        element: <UserListPage />,
+        element: null,
         isShowMenu: true,
         isPrivate: true,
         roles: ['admin', 'user'],

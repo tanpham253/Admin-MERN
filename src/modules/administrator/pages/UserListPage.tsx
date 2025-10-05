@@ -10,10 +10,7 @@ import type { GetUsersParams } from '../services/userService';
 const { Title } = Typography;
 
 const UserListPage = () => {
-  const [searchParams, setSearchParams] = useState<GetUsersParams>({
-    sortField: 'created_at',
-    sortOrder: 'desc',
-  });
+  const [searchParams, setSearchParams] = useState<GetUsersParams>({});
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['users', searchParams],
@@ -21,10 +18,7 @@ const UserListPage = () => {
   });
 
   const handleSearch = (values: { role?: string; active?: string; search?: string }) => {
-    const params: GetUsersParams = {
-      sortField: searchParams.sortField,
-      sortOrder: searchParams.sortOrder,
-    };
+    const params: GetUsersParams = {};
 
     if (values.role) {
       params.role = values.role as 'staff' | 'admin';
@@ -39,14 +33,6 @@ const UserListPage = () => {
     }
 
     setSearchParams(params);
-  };
-
-  const handleSort = (sortField: string, sortOrder: 'asc' | 'desc') => {
-    setSearchParams({
-      ...searchParams,
-      sortField,
-      sortOrder,
-    });
   };
 
   return (
@@ -80,7 +66,6 @@ const UserListPage = () => {
           <UserTable
             users={data?.data || []}
             loading={isLoading}
-            onTableChange={handleSort}
           />
         </Card>
       </Space>
