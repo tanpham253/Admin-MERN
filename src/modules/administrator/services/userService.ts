@@ -1,5 +1,4 @@
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL_API;
 
 export interface User {
   id: string;
@@ -16,6 +15,8 @@ export interface GetUsersParams {
   role?: 'staff' | 'admin';
   active?: boolean;
   search?: string;
+  sortField?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface GetUsersResponse {
@@ -40,15 +41,23 @@ export const userService = {
       queryParams.append('search', params.search);
     }
 
-    const url = `${SUPABASE_URL}/functions/v1/get-users${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    if (params?.sortField) {
+      queryParams.append('sortField', params.sortField);
+    }
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    if (params?.sortOrder) {
+      queryParams.append('sortOrder', params.sortOrder);
+    }
+
+    const url = `${BACKEND_URL}/users${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+
+    // const response = await fetch(url, {
+    //   method: 'GET',
+    //   headers: {
+    //     'Authorization': `Bearer ${}`,
+    //     'Content-Type': 'application/json',
+    //   },
+    // });
 
     if (!response.ok) {
       throw new Error('Failed to fetch users');
