@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { routesDashboard } from '../modules/dashboard/dashboard.route';
+import { routesOrders } from '../modules/orders/order.route';
 import { routesAuth } from '../modules/auth/auth.route';
 import { routesAdministrator } from '../modules/administrator/administrator.route';
 import { routesProducts } from '../modules/products/product.route';
@@ -24,6 +25,7 @@ export const generatePath = (key: string) => {
 
 export const routes: RouteItem[] = [
   ...routesDashboard, //đăng ký route dashboard
+  ...routesOrders,
   ...routesAuth,
   ...routesProducts,
   ...routesAdministrator,

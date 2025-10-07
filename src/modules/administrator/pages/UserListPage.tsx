@@ -1,76 +1,284 @@
-import { useState } from 'react';
-import { Card, Typography, Space, Alert } from 'antd';
-import { useQuery } from '@tanstack/react-query';
-import { TeamOutlined } from '@ant-design/icons';
-import UserSearchForm from '../components/UserSearchForm';
-import UserTable from '../components/UserTable';
-import { userService } from '../services/userService';
-import type { GetUsersParams } from '../services/userService';
+import {
+  Button,
+  Flex,
+  Form,
+  Input,
+  message,
+  Modal,
+  Popconfirm,
+  Space,
+  Switch,
+  Table,
+} from "antd";
+import type { TableProps } from "antd";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useSearchParams } from "react-router";
+import { useAppMessage } from "../../../stores/useAppMessage";
+import { useState } from "react";
+import {
+  fetchUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+} from "../services/userService";
+import type { User } from "../services/userService";
 
-const { Title } = Typography;
+const UsersPage = () => {
+  const navigate = useNavigate();
+  const { sendMessage } = useAppMessage();
+  const queryClient = useQueryClient();
 
-const UserListPage = () => {
-  const [searchParams, setSearchParams] = useState<GetUsersParams>({});
+  // Pagination
+  const [params] = useSearchParams();
+  const page = params.get("page");
+  const limit = params.get("limit");
+  const int_page = page ? parseInt(page) : 1;
+  const int_limit = limit ? parseInt(limit) : 5;
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['users', searchParams],
-    queryFn: () => userService.getUsers(searchParams),
+  /* ---- FETCH USERS ---- */
+  const queryUsers = useQuery({
+    queryKey: ["users", int_page, int_limit],
+    queryFn: () => fetchUsers(int_page, int_limit),
   });
 
-  const handleSearch = (values: { role?: string; active?: string; search?: string }) => {
-    const params: GetUsersParams = {};
+  // console.log("🟡 queryUsers status:", queryUsers.status);
+  // console.log("🟢 queryUsers.data:", queryUsers.data);
+  // console.log("🟣 queryUsers.data?.data:", queryUsers.data?.data);
+  // console.log("🔵 dataSource about to render:", queryUsers.data?.data || []);
 
-    if (values.role) {
-      params.role = values.role as 'staff' | 'admin';
-    }
+  /* ---- DELETE USER ---- */
+  const deleteMutation = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: () => {
+      sendMessage({ msg: "User deleted successfully", type: "success" });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: () => {
+      sendMessage({ msg: "Failed to delete user", type: "error" });
+    },
+  });
 
-    if (values.active !== undefined && values.active !== '') {
-      params.active = values.active === 'true';
-    }
+  /* ---- ADD USER ---- */
+  const [isModalAddOpen, setIsModalAddOpen] = useState(false);
+  const [formAdd] = Form.useForm();
 
-    if (values.search) {
-      params.search = values.search;
-    }
+  const mutationAddUser = useMutation({
+    mutationFn: createUser,
+    onSuccess: () => {
+      sendMessage({ msg: "User added successfully", type: "success" });
+      setIsModalAddOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      formAdd.resetFields();
+    },
+    onError: () => {
+      sendMessage({ msg: "Failed to add user", type: "error" });
+    },
+  });
 
-    setSearchParams(params);
+  const handleModalAddOk = () => formAdd.submit();
+  const handleModalAddCancel = () => setIsModalAddOpen(false);
+
+  const onFinishAdd = async (values: any) => {
+    console.log("Adding user:", values);
+    await mutationAddUser.mutateAsync(values);
   };
 
+  /* ---- EDIT USER ---- */
+  const [isModalEditOpen, setIsModalEditOpen] = useState(false);
+  const [formEdit] = Form.useForm();
+
+  const mutationEditUser = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<User> }) =>
+      updateUser(id, data),
+    onSuccess: () => {
+      sendMessage({ msg: "User updated successfully", type: "success" });
+      setIsModalEditOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: () => {
+      sendMessage({ msg: "Failed to update user", type: "error" });
+    },
+  });
+
+  const handleModalEditOk = () => formEdit.submit();
+  const handleModalEditCancel = () => setIsModalEditOpen(false);
+
+  const onFinishEdit = async (values: any) => {
+    await mutationEditUser.mutateAsync({
+      id: formEdit.getFieldValue("id"),
+      data: values,
+    });
+  };
+
+  /* ---- TABLE COLUMNS ---- */
+  const columns: TableProps<User>["columns"] = [
+    {
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
+    },
+    {
+      title: "First Name",
+      dataIndex: "first_name",
+      key: "first_name",
+    },
+    {
+      title: "Last Name",
+      dataIndex: "last_name",
+      key: "last_name",
+    },
+    {
+      title: "Role",
+      key: "roles",
+      render: (_, record) => (
+        <span style={{ textTransform: "capitalize" }}>
+          {record.roles?.[0] || "N/A"}
+        </span>
+      ),
+    },
+    {
+      title: "Active",
+      dataIndex: "is_active",
+      key: "is_active",
+      render: (value: boolean) => <Switch checked={value} disabled />,
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, record) => (
+        <Space size="middle">
+          <Button
+            onClick={() => {
+              setIsModalEditOpen(true);
+              formEdit.setFieldsValue(record);
+            }}
+          >
+            Edit
+          </Button>
+          <Popconfirm
+            title="Delete User"
+            description="Are you sure to delete this user?"
+            onConfirm={async () => {
+              await deleteMutation.mutateAsync(record.id);
+            }}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button danger>Delete</Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
   return (
-    <div style={{ padding: '24px' }}>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <Card>
-          <Space align="center" size="middle">
-            <TeamOutlined style={{ fontSize: 32, color: '#1890ff' }} />
-            <div>
-              <Title level={2} style={{ margin: 0 }}>
-                Staff & Admin Management
-              </Title>
-              <Typography.Text type="secondary">
-                View and manage all staff and admin users in the system
-              </Typography.Text>
-            </div>
-          </Space>
-        </Card>
+    <>
+      <Flex justify="space-between" align="center">
+        <h1>User Management</h1>
+        <Button onClick={() => setIsModalAddOpen(true)} type="primary">
+          Add User
+        </Button>
+      </Flex>
 
-        {error && (
-          <Alert
-            message="Error"
-            description="Failed to load users. Please try again later."
-            type="error"
-            showIcon
-          />
-        )}
+      <Table<User>
+        rowKey="_id"
+        loading={queryUsers.isLoading}
+        columns={columns}
+        dataSource={queryUsers.data?.data || []} // ✅ correct (data array)
+        pagination={{
+          current: int_page,
+          pageSize: int_limit,
+          total: queryUsers.data?.data.count || 0, // ✅ use count
+          onChange: (page, pageSize) => {
+            navigate(`?page=${page}&limit=${pageSize}`);
+          },
+        }}
+      />
 
-        <Card>
-          <UserSearchForm onSearch={handleSearch} />
-          <UserTable
-            users={data?.data || []}
-            loading={isLoading}
-          />
-        </Card>
-      </Space>
-    </div>
+      {/* MODAL ADD */}
+      <Modal
+        title="Add User"
+        open={isModalAddOpen}
+        onOk={handleModalAddOk}
+        onCancel={handleModalAddCancel}
+      >
+        <Form form={formAdd} layout="vertical" onFinish={onFinishAdd}>
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[{ required: true, message: "Please enter an email" }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="First Name"
+            name="first_name"
+            rules={[{ required: true, message: "Please enter first name" }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="Last Name"
+            name="last_name"
+            rules={[{ required: true, message: "Please enter last name" }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="Role"
+            name="role"
+            rules={[{ required: true, message: "Please select a role" }]}
+          >
+            <Input placeholder="admin or staff" />
+          </Form.Item>
+          <Form.Item
+            label="Active"
+            name="is_active"
+            valuePropName="checked"
+            initialValue={true}
+          >
+            <Switch />
+          </Form.Item>
+          <Form.Item
+            label="Password"
+            name="password"
+            rules={[{ required: true }]}
+          >
+            <Input.Password />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* MODAL EDIT */}
+      <Modal
+        title="Edit User"
+        open={isModalEditOpen}
+        onOk={handleModalEditOk}
+        onCancel={handleModalEditCancel}
+      >
+        <Form form={formEdit} layout="vertical" onFinish={onFinishEdit}>
+          <Form.Item label="ID" name="id" hidden>
+            <Input />
+          </Form.Item>
+          <Form.Item label="Email" name="email">
+            <Input disabled />
+          </Form.Item>
+          <Form.Item label="First Name" name="first_name">
+            <Input />
+          </Form.Item>
+          <Form.Item label="Last Name" name="last_name">
+            <Input />
+          </Form.Item>
+          <Form.Item label="Role" name="role">
+            <Input placeholder="admin or staff" />
+          </Form.Item>
+          <Form.Item label="Active" name="is_active" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </>
   );
 };
 
-export default UserListPage;
+export default UsersPage;

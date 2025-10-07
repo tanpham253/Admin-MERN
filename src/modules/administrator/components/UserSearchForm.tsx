@@ -2,7 +2,7 @@ import { Form, Input, Select, Button, Space } from 'antd';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 
 interface UserSearchFormProps {
-  onSearch: (values: { role?: string; active?: string; search?: string }) => void;
+  onSearch: (values: { role?: string; is_active?: string; search?: string }) => void;
 }
 
 const UserSearchForm = ({ onSearch }: UserSearchFormProps) => {
@@ -39,7 +39,7 @@ const UserSearchForm = ({ onSearch }: UserSearchFormProps) => {
         </Select>
       </Form.Item>
 
-      <Form.Item name="active">
+      <Form.Item name="is_active">
         <Select
           placeholder="Filter by status"
           style={{ width: 150 }}

@@ -8,14 +8,14 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { useAppMessage } from '../../stores/useAppMessage';
 import { useState } from 'react';
 import ActionHasRoles from '../auth/components/ActionHasRoles';
-import { UploadOutlined } from '@ant-design/icons';
+import { SearchOutlined, UploadOutlined } from '@ant-design/icons';
 type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
 
 const ProductsPage = () => {
 
   const navigate = useNavigate();
   const {sendMessage} = useAppMessage();
-
+  const { Search } = Input;
     const queryClient = useQueryClient()
   /*----/ BEGIN  PRODUCT LIST  /-----*/
   const [params] = useSearchParams();
@@ -23,13 +23,36 @@ const ProductsPage = () => {
   const limit = params.get('limit');
   const int_page = page ? parseInt(page) : 1;
   const int_limit = limit ? parseInt(limit) : 5;
+  const keyword = params.get('keyword') || '';
 
   console.log('<<=== 🚀 int_page ===>>',int_page,int_limit);
 
- const queryProducts = useQuery<ProductsResponse, Error>({
-  queryKey: ['products', int_page, int_limit ],
-  queryFn: ()=>fetchProducts(int_page, int_limit)
- })
+  // 🔍 Search state
+  const [searchKeyword, setSearchKeyword] = useState(keyword);
+
+  // 🧭 Helper to update URL params
+  const updateSearchParams = (newParams: Record<string, any>) => {
+    const updated = new URLSearchParams(params);
+    Object.entries(newParams).forEach(([key, value]) => {
+      if (value === undefined || value === '' || value === null) {
+        updated.delete(key);
+      } else {
+        updated.set(key, String(value));
+      }
+    });
+    navigate(`?${updated.toString()}`);
+  };
+
+//  const queryProducts = useQuery<ProductsResponse, Error>({
+//   queryKey: ['products', int_page, int_limit ],
+//   queryFn: ()=>fetchProducts(int_page, int_limit)
+//  })
+// ✅ Fetch product list with keyword support
+  const queryProducts = useQuery<ProductsResponse, Error>({
+    queryKey: ['products', page, limit, keyword],
+    queryFn: () => fetchProducts(int_page, int_limit, keyword),
+    placeholderData: (previousData) => previousData, // ✅ replaces keepPreviousData
+  });
 
  console.log('<<=== 🚀 queryProducts.data ===>>',queryProducts.data);
 
@@ -206,10 +229,42 @@ const columns: TableProps<ProductType>['columns'] = [
     render: (text) => <a>{text}</a>,
   },
   {
-    title: 'Price',
-    dataIndex: 'price',
-    key: 'price',
+  title: 'Price',
+  key: 'price',
+  render: (_, record) => {
+    const discountedPrice = record.price * (1 - (record.discount || 0) / 100);
+    return (
+      <div>
+        <span style={{ fontWeight: 600, color: '#1890ff' }}>
+          ${discountedPrice.toFixed(2)}
+        </span>
+        {record.discount > 0 && (
+          <span
+            style={{
+              textDecoration: 'line-through',
+              color: '#999',
+              marginLeft: 8,
+              fontSize: 13,
+            }}
+          >
+            ${record.price.toFixed(2)}
+          </span>
+        )}
+        {record.discount > 0 && (
+          <span
+            style={{
+              color: 'red',
+              marginLeft: 6,
+              fontSize: 13,
+            }}
+          >
+            (-{record.discount}%)
+          </span>
+        )}
+      </div>
+    );
   },
+},
   {
     title: 'Stock',
     dataIndex: 'stock',
@@ -260,23 +315,19 @@ const columns: TableProps<ProductType>['columns'] = [
 
   return (<>
   <Flex justify='space-between' align='center'>
-      <h1>product List</h1>
+      <h1>Product List</h1>
+      <Search
+        placeholder="Search by product name..."
+        allowClear
+        enterButton={<SearchOutlined />}
+        style={{ width: 300 }}
+        value={searchKeyword}
+        onChange={(e) => setSearchKeyword(e.target.value)}
+        onSearch={(value) => updateSearchParams({ page: 1, keyword: value })}
+      />
       <Button onClick={()=>setIsModalAddOpen(true)} type="primary">Thêm Product</Button>
   </Flex>
   <Table<ProductType> key={'_id'} loading={queryProducts.isLoading} columns={columns} dataSource={queryProducts.data?.products || []} />
-  <div style={{ textAlign: 'right', marginTop: 30 }}>
-            <Pagination
-              defaultCurrent={1}
-              total={queryProducts.data?.totalRecords || 0} // Example total, replace with actual total from API
-              showSizeChanger={false}
-              pageSize={int_limit}
-              onChange={(page, pageSize)=>{
-                  navigate(`?page=${page}&limit=${pageSize}`)
-              }}
-              showQuickJumper
-              showTotal={(total) => `Total ${total} items`}
-            />
-          </div>
       {/* MODAL THEM MOI */}
       <Modal
         title="Basic Modal"

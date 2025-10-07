@@ -15,8 +15,12 @@ export interface StaffType {
 
 export interface ProductInOrder {
   _id: string;
-  product_name: string;
-  price: number;
+  product_id: {
+    _id: string;
+    product_name: string;
+    price: number;
+    thumbnail?: string;
+  };
   discount: number;
   quantity: number;
 }
@@ -24,17 +28,21 @@ export interface ProductInOrder {
 export interface OrderType {
   _id: string;
   // order_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
   order_date: string;
-  require_date: string;
+  completed_date: string;
   shipping_date?: string;
-  order_status: string;
+  order_status: number;
   description?: string;
   street: string;
   city: string;
   payment_type: string;
   customer_id: CustomerType;
   staff_id: StaffType;
-  order_details: ProductInOrder[];
+  order_items: ProductInOrder[];
 }
 
 export interface OrdersResponse {

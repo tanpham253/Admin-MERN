@@ -5,6 +5,7 @@ export interface ProductType {
   product_name: string;
   price: number;
   stock: number;
+  discount: number;
   thumbnail: string;
   category_id: CategoryType;
   brand_id: BrandType;

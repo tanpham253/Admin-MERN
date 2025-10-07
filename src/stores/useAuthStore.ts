@@ -9,7 +9,7 @@ interface IUser {
   email: string;
   first_name: string;
   last_name: string;
-  active: boolean;
+  is_active: boolean;
   roles: string[];
   fullName: string;
   access_token: string;

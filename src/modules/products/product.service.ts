@@ -14,11 +14,18 @@ export const fetchBrands = async (): Promise<any> => {
 };
 
 //Hàm get Sản phẩm
-export const fetchProducts = async (page: number, limit = 10) => {
-   const response = await apiClient.get(`/v1/products?page=${page}&limit=${limit}`);
-   return response.data
-};
+// export const fetchProducts = async (page: number, limit = 10) => {
+//    const response = await apiClient.get(`/v1/products?page=${page}&limit=${limit}`);
+//    return response.data
+// };
 
+// get and search
+export const fetchProducts = async (page: number, limit = 10, keyword = '') => {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (keyword) params.append('keyword', keyword);
+  const response = await apiClient.get(`/v1/products?${params.toString()}`);
+  return response.data;
+};
 
 export const fetchDelete = async (id: string) =>{
    const response = await apiClient.delete(`/v1/products/${id}`);

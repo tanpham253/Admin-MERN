@@ -40,12 +40,12 @@ const UserTable = ({ users, loading }: UserTableProps) => {
     },
     {
       title: 'Status',
-      dataIndex: 'active',
-      key: 'active',
+      dataIndex: 'is_active',
+      key: 'is_active',
       width: 120,
-      render: (active: boolean) => (
-        <Tag color={active ? 'success' : 'default'}>
-          {active ? 'Active' : 'Inactive'}
+      render: (is_active: boolean) => (
+        <Tag color={is_active ? 'success' : 'default'}>
+          {is_active ? 'Active' : 'Inactive'}
         </Tag>
       ),
     },

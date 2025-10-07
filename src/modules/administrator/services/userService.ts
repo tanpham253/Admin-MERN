@@ -1,21 +1,22 @@
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+import apiClient from "../../../libs/axiosClient";
 
 export interface User {
   id: string;
   email: string;
   first_name: string;
   last_name: string;
-  role: 'staff' | 'admin';
-  active: boolean;
+  roles: string[];
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
 
 export interface GetUsersParams {
-  role?: 'staff' | 'admin';
-  active?: boolean;
+  roles: string[];
+  is_active?: boolean;
   search?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface GetUsersResponse {
@@ -24,36 +25,28 @@ export interface GetUsersResponse {
   count: number;
 }
 
-export const userService = {
-  async getUsers(params?: GetUsersParams): Promise<GetUsersResponse> {
-    const queryParams = new URLSearchParams();
+export const fetchUsers = async (page: number, limit = 10) => {
+  const response = await apiClient.get(`/v1/users?page=${page}&limit=${limit}`);
+  // console.log("DEBUG users raw response =>", response);
+  return response; // ✅ whole object
+};
 
-    if (params?.role) {
-      queryParams.append('role', params.role);
-    }
+export const fetchUserById = async (id: string): Promise<User> => {
+  const response = await apiClient.get(`/v1/users/${id}`);
+  return response.data;
+};
 
-    if (params?.active !== undefined) {
-      queryParams.append('active', params.active.toString());
-    }
+export const createUser = async (formData: Partial<User>): Promise<User> => {
+  const response = await apiClient.post(`/v1/users`, formData);
+  return response.data;
+};
 
-    if (params?.search) {
-      queryParams.append('search', params.search);
-    }
+export const updateUser = async (id: string, formData: Partial<User>): Promise<User> => {
+  const response = await apiClient.put(`/v1/users/${id}`, formData);
+  return response.data;
+};
 
-    const url = `${SUPABASE_URL}/functions/v1/get-users${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch users');
-    }
-
-    return response.json();
-  },
+export const deleteUser = async (id: string): Promise<{ success: boolean }> => {
+  const response = await apiClient.delete(`/v1/users/${id}`);
+  return response.data;
 };
