@@ -11,7 +11,7 @@ export const routesDashboard: RouteItem[] = [
     element: <DashboardPage />,
     isShowMenu: true, // Hiển thị menu cho route này
     isPrivate: true, // Chỉ cho phép người dùng đã đăng nhập truy cập
-    roles: ['admin', 'staff'],
+    roles: ['admin'],
     permissions: ['dashboard.view'],
   },
 ]

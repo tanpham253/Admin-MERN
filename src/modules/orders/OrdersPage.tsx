@@ -2,6 +2,7 @@ import {
   Button,
   Descriptions,
   Flex,
+  Input,
   message,
   Modal,
   Pagination,
@@ -19,7 +20,7 @@ import type {
 } from "../orders/order.type";
 import { useNavigate, useSearchParams } from "react-router";
 import { useState } from "react";
-import { EyeOutlined } from "@ant-design/icons";
+import { EyeOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import { updateOrderStatus } from "../orders/order.service";
 import { Select } from "antd";
 import type { SelectProps } from "antd";
@@ -35,9 +36,16 @@ const OrdersPage = () => {
   const [isModalDetailOpen, setIsModalDetailOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderType | null>(null);
 
-  const queryOrders = useQuery<OrdersResponse, Error>({
-    queryKey: ["orders", int_page, int_limit],
-    queryFn: () => fetchOrders(int_page, int_limit),
+  // get initial status filter from URL and search
+  const statusParam = params.get("status");
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [keyword, setKeyword] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<number | undefined>(
+    statusParam ? parseInt(statusParam) : undefined
+  );
+  const queryOrders = useQuery({
+    queryKey: ["orders", int_page, int_limit, statusFilter, keyword],
+    queryFn: () => fetchOrders(int_page, int_limit, statusFilter, keyword),
   });
 
   const handleViewDetail = (record: OrderType) => {
@@ -52,17 +60,17 @@ const OrdersPage = () => {
 
   const getStatusColor = (status: number) => {
     const colors: Record<number, string> = {
-      1: "orange", // pending
-      2: "blue", // confirmed
-      3: "red", // canceled
-      4: "purple", // prepareShipping
-      5: "cyan", // shipping
-      6: "volcano", // cancelShipping
-      7: "geekblue", // shipped
-      8: "gold", // pendingPaid
-      9: "lime", // paid
-      10: "magenta", // refund
-      11: "green", // finished ✅
+      1: "#FFB945", // Pending → Sunset Orange
+      2: "#5B8FF9", // Confirmed → Geek Blue
+      3: "#E86452", // Canceled → Dust Red
+      4: "#A97BF9", // Preparing → Golden Purple
+      5: "#5AD8A6", // Shipping → Cyan
+      6: "#FF9845", // Cancel Shipping → Sunrise Orange
+      7: "#5B8FF9", // Shipped → Daybreak Blue (same hue as Geek Blue)
+      8: "#F6BD16", // Pending Paid → Sunrise Yellow
+      9: "#1E9493", // Paid → Dark Green
+      10: "#FF99C3", // Refund → Magenta
+      11: "#3de400ff", // Finished → green
     };
     return colors[status] || "default";
   };
@@ -126,12 +134,6 @@ const OrdersPage = () => {
 
   const columns: TableProps<OrderType>["columns"] = [
     {
-      title: "Order ID",
-      dataIndex: "_id",
-      key: "_id",
-      width: 100,
-    },
-    {
       title: "Customer",
       key: "customer",
       render: (_, record) => {
@@ -172,6 +174,11 @@ const OrdersPage = () => {
       title: "Payment",
       dataIndex: "payment_type",
       key: "payment_type",
+    },
+        {
+      title: "Customer Number",
+      dataIndex: "phone",
+      key: "phone",
     },
     {
       title: "Shipping Address",
@@ -253,6 +260,41 @@ const OrdersPage = () => {
     <>
       <Flex justify="space-between" align="center">
         <h1>Order List</h1>
+        <Space>
+          <Input
+            placeholder="Search by Name, Email, or Phone"
+            prefix={<SearchOutlined />}
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onPressEnter={() => {
+              navigate(`?page=1&limit=${int_limit}&keyword=${keyword}`);
+              queryClient.invalidateQueries({ queryKey: ["orders"] });
+            }}
+            allowClear
+            style={{ width: 300 }}
+          />
+
+          <Select
+            allowClear
+            placeholder="Filter by Status"
+            style={{ width: 200 }}
+            value={statusFilter}
+            onChange={(value) => {
+              setStatusFilter(value);
+              navigate(
+                `?page=1&limit=${int_limit}${value ? `&status=${value}` : ""}`
+              );
+            }}
+            options={orderStatusOptions.map((opt) => ({
+              value: opt.value,
+              label: (
+                <span>
+                  <Tag color={getStatusColor(opt.value)}>{opt.label}</Tag>
+                </span>
+              ),
+            }))}
+          />
+        </Space>
       </Flex>
 
       <Table<OrderType>
@@ -265,16 +307,14 @@ const OrdersPage = () => {
 
       <div style={{ textAlign: "right", marginTop: 30 }}>
         <Pagination
-          defaultCurrent={1}
           current={int_page}
           total={queryOrders.data?.totalRecords || 0}
-          showSizeChanger={false}
           pageSize={int_limit}
+          showSizeChanger={false}
           onChange={(page, pageSize) => {
             navigate(`?page=${page}&limit=${pageSize}`);
           }}
-          showQuickJumper
-          showTotal={(total) => `Total ${total} items`}
+          showTotal={(total) => `Total ${total} orders`}
         />
       </div>
 

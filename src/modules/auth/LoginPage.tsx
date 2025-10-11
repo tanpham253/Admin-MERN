@@ -1,73 +1,104 @@
+import type { FormProps } from "antd";
+import { Button, Checkbox, Form, Input, Card, Typography, Space } from "antd";
+import { useAuthStore } from "../../stores/useAuthStore";
+import { useNavigate } from "react-router";
 
-import type { FormProps } from 'antd';
-import { Button, Checkbox, Form, Input } from 'antd';
-import { useAuthStore } from '../../stores/useAuthStore';
-import { useNavigate } from 'react-router';
+const { Title, Text } = Typography;
 
 type FieldType = {
   email: string;
   password: string;
-  remember: string;
+  remember: boolean;
 };
-
-
 
 const LoginPage = () => {
-  const {login} = useAuthStore();
-  const navigate = useNavigate()
-  const onFinish: FormProps<FieldType>['onFinish'] = async(values) => {
-  console.log('Success:', values);
-  //gọi api login ở đây
-   login(values.email, values.password, ()=>{
-    //
-    navigate('/dashboard')
-   })
-};
+  const { login } = useAuthStore();
+  const navigate = useNavigate();
 
-const onFinishFailed: FormProps<FieldType>['onFinishFailed'] = (errorInfo) => {
-  console.log('Failed:', errorInfo);
-};
+  const onFinish: FormProps<FieldType>["onFinish"] = async (values) => {
+    console.log("Success:", values);
+    login(values.email, values.password, () => navigate("/dashboard"));
+  };
+
+  const onFinishFailed: FormProps<FieldType>["onFinishFailed"] = (errorInfo) => {
+    console.log("Failed:", errorInfo);
+  };
 
   return (
-  <Form
-    name="basic"
-    labelCol={{ span: 8 }}
-    wrapperCol={{ span: 16 }}
-    style={{ maxWidth: 600 }}
-    initialValues={{ email: 'admin@gmail.com', password: '!Qaz123456', remember: true }}
-    onFinish={onFinish}
-    onFinishFailed={onFinishFailed}
-    autoComplete="off"
-  >
-    <Form.Item<FieldType>
-      label="Email"
-      name="email"
-      help='admin@gmail.com'
-      rules={[{ required: true, message: 'Please input your Email!' }]}
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      }}
     >
-      <Input />
-    </Form.Item>
+      <Card
+        style={{
+          width: 400,
+          borderRadius: 12,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+        }}
+      >
+        <Space direction="vertical" size="large" style={{ width: "100%" }}>
+          <div style={{ textAlign: "center" }}>
+            <Title level={3} style={{ marginBottom: 4 }}>
+              Welcome Back
+            </Title>
+            <Text type="secondary">Login to your account</Text>
+          </div>
 
-    <Form.Item<FieldType>
-      label="Password"
-      name="password"
-      help='!Qaz123456'
-      rules={[{ required: true, message: 'Please input your password!' }]}
-    >
-      <Input.Password />
-    </Form.Item>
+          <Form<FieldType>
+            name="login"
+            layout="vertical"
+            initialValues={{
+              email: "admin@gmail.com",
+              password: "!Qaz123456",
+              remember: true,
+            }}
+            onFinish={onFinish}
+            onFinishFailed={onFinishFailed}
+            autoComplete="off"
+          >
+            <Form.Item
+              label="Email"
+              name="email"
+              rules={[{ required: true, message: "Please input your email!" }]}
+              tooltip="Try admin@gmail.com"
+            >
+              <Input placeholder="Enter your email" size="large" />
+            </Form.Item>
 
-    <Form.Item<FieldType> name="remember" valuePropName="checked" label={null}>
-      <Checkbox>Remember me</Checkbox>
-    </Form.Item>
+            <Form.Item
+              label="Password"
+              name="password"
+              rules={[{ required: true, message: "Please input your password!" }]}
+              tooltip="Try !Qaz123456"
+            >
+              <Input.Password placeholder="Enter your password" size="large" />
+            </Form.Item>
 
-    <Form.Item label={null}>
-      <Button type="primary" htmlType="submit">
-        Submit
-      </Button>
-    </Form.Item>
-  </Form>
-);
-}
+            <Form.Item name="remember" valuePropName="checked">
+              <Checkbox>Remember me</Checkbox>
+            </Form.Item>
+
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                size="large"
+                block
+                style={{ borderRadius: 6 }}
+              >
+                Sign In
+              </Button>
+            </Form.Item>
+          </Form>
+        </Space>
+      </Card>
+    </div>
+  );
+};
 
 export default LoginPage;
