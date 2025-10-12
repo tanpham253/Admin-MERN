@@ -3,6 +3,8 @@ import { routesDashboard } from '../modules/dashboard/dashboard.route';
 import { routesAuth } from '../modules/auth/auth.route';
 import { routesAdministrator } from '../modules/administrator/administrator.route';
 import { routesProducts } from '../modules/products/product.route';
+import { routesBrands } from '../modules/brand/brand.route';
+import { routesOrders } from '../modules/orders/order.route';
 
 export type RouteItem = {
   path?: string;
@@ -24,8 +26,8 @@ export const generatePath = (key: string) => {
 
 export const routes: RouteItem[] = [
   ...routesDashboard, //đăng ký route dashboard
+  ...routesOrders,
   ...routesAuth,
   ...routesProducts,
   ...routesAdministrator,
-  
 ];

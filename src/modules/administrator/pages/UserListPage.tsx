@@ -1,56 +1,52 @@
 import { useState } from 'react';
-import { Card, Typography, Space, Alert } from 'antd';
-import { useQuery } from '@tanstack/react-query';
+import { Card, Typography, Space, Alert, Pagination } from 'antd';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { TeamOutlined } from '@ant-design/icons';
 import UserSearchForm from '../components/UserSearchForm';
 import UserTable from '../components/UserTable';
 import { userService } from '../services/userService';
-import type { GetUsersParams } from '../services/userService';
+import type { GetUsersParams } from '../types/user.type';
 
 const { Title } = Typography;
 
 const UserListPage = () => {
   const [searchParams, setSearchParams] = useState<GetUsersParams>({
-    sortField: 'created_at',
+    page: 1,
+    limit: 10,
+    sortField: 'createdAt',
     sortOrder: 'desc',
   });
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['users', searchParams],
     queryFn: () => userService.getUsers(searchParams),
+    placeholderData: keepPreviousData,
   });
 
+  console.log('data', data);
+
   const handleSearch = (values: { role?: string; active?: string; search?: string }) => {
-    const params: GetUsersParams = {
-      sortField: searchParams.sortField,
-      sortOrder: searchParams.sortOrder,
-    };
-
-    if (values.role) {
-      params.role = values.role as 'staff' | 'admin';
-    }
-
-    if (values.active !== undefined && values.active !== '') {
-      params.active = values.active === 'true';
-    }
-
-    if (values.search) {
-      params.search = values.search;
-    }
-
-    setSearchParams(params);
+    setSearchParams((prev) => ({
+      ...prev,
+      page: 1,
+      role: values.role as 'staff' | 'admin' | undefined,
+      active: values.active ? values.active === 'true' : undefined,
+      search: values.search || undefined,
+    }));
   };
 
   const handleSort = (sortField: string, sortOrder: 'asc' | 'desc') => {
-    setSearchParams({
-      ...searchParams,
+    setSearchParams((prev) => ({
+      ...prev,
       sortField,
       sortOrder,
-    });
+    }));
   };
 
+  console.log('Fetching users with params:', searchParams);
+
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: 24 }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Card>
           <Space align="center" size="middle">
@@ -78,7 +74,7 @@ const UserListPage = () => {
         <Card>
           <UserSearchForm onSearch={handleSearch} />
           <UserTable
-            users={data?.data || []}
+            users={data ?? []}
             loading={isLoading}
             onTableChange={handleSort}
           />

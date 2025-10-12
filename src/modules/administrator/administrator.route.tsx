@@ -1,6 +1,7 @@
-import { GroupOutlined, UserOutlined } from "@ant-design/icons";
+import { UserAddOutlined, UsergroupAddOutlined, UserOutlined } from "@ant-design/icons";
 import type { RouteItem } from "../../routes";
 import UserListPage from "./pages/UserListPage";
+import CustomerListPage from "./pages/CustomerListPage";
 
 export const routesAdministrator: RouteItem[] = [
   {
@@ -10,30 +11,30 @@ export const routesAdministrator: RouteItem[] = [
     icon: <UserOutlined />,
     isShowMenu: true,
     isPrivate: true,
-    roles: ['admin', 'user'],
-    permissions: ['roles.view', 'users.view'],
+    roles: ['admin'],
+    permissions: ['customers.view', 'users.view'],
     children: [
       {
         path: '/administrators/users',
         label: 'Users',
-        icon: <UserOutlined />,
+        icon: <UserAddOutlined />,
         key: 'administrators-users',
         element: <UserListPage />,
         isShowMenu: true,
         isPrivate: true,
-        roles: ['admin', 'user'],
+        roles: ['admin'],
         permissions: ['users.view'],
       },
       {
-        path: '/administrators/roles',
-        label: 'Roles',
-        icon: <GroupOutlined />,
-        key: 'administrators-roles',
-        element: null,
+        path: '/administrators/customers',
+        label: 'Customers',
+        icon: <UsergroupAddOutlined />,
+        key: 'administrators-customers',
+        element: <CustomerListPage />,
         isShowMenu: true,
         isPrivate: true,
-        roles: ['dev', 'user'],
-        permissions: ['roles.view'],
+        roles: ['admin'],
+        permissions: ['customers.view'],
       },
     ],
   },

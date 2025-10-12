@@ -1,255 +1,156 @@
-import { Button, Descriptions, Flex, Modal, Pagination, Space, Table, Tag } from 'antd';
-import type { TableProps } from 'antd';
-import { fetchOrders } from './order.service';
-import { useQuery } from '@tanstack/react-query';
-import type { OrdersResponse, OrderType, ProductInOrder } from './order.type';
-import { useNavigate, useSearchParams } from 'react-router';
-import { useState } from 'react';
-import { EyeOutlined } from '@ant-design/icons';
+import React from "react";
+import { Card, Col, Row, Statistic, Table, Typography, Tag } from "antd";
+import { Line, Pie } from "@ant-design/plots";
+import { useQuery } from "@tanstack/react-query";
+import { fetchOrders, fetchOrderStats } from "./dashboard.service";
+import type { OrderType } from "../orders/order.type";
 
-const OrdersPage = () => {
-  const navigate = useNavigate();
-  const [params] = useSearchParams();
-  const page = params.get('page');
-  const limit = params.get('limit');
-  const int_page = page ? parseInt(page) : 1;
-  const int_limit = limit ? parseInt(limit) : 10;
+const { Title } = Typography;
 
-  const [isModalDetailOpen, setIsModalDetailOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<OrderType | null>(null);
-
-  const queryOrders = useQuery<OrdersResponse, Error>({
-    queryKey: ['orders', int_page, int_limit],
-    queryFn: () => fetchOrders(int_page, int_limit)
+const DashboardPage: React.FC = () => {
+  const { data: ordersData, isLoading } = useQuery({
+    queryKey: ["orders"],
+    queryFn: () => fetchOrders(1, 10),
   });
 
-  const handleViewDetail = (record: OrderType) => {
-    setSelectedOrder(record);
-    setIsModalDetailOpen(true);
-  };
+  const { data: stats } = useQuery({
+    queryKey: ["orderStats"],
+    queryFn: fetchOrderStats,
+  });
 
-  const handleModalDetailCancel = () => {
-    setIsModalDetailOpen(false);
-    setSelectedOrder(null);
-  };
+  const totalOrders = ordersData?.totalRecords ?? 0;
+  const completed =
+    ordersData?.orders.filter((o) => Number(o.order_status) === 9).length ?? 0;
+  const pending =
+    ordersData?.orders.filter((o) => Number(o.order_status) === 1).length ?? 0;
+  const cancelled =
+    ordersData?.orders.filter((o) => Number(o.order_status) === 3).length ?? 0;
 
-  const getStatusColor = (status: string) => {
-    const statusColors: Record<string, string> = {
-      'WAITING CONFIRMATION': 'orange',
-      'CONFIRMED': 'blue',
-      'SHIPPING': 'cyan',
-      'COMPLETED': 'green',
-      'CANCELLED': 'red',
-    };
-    return statusColors[status] || 'default';
-  };
-
-  const columns: TableProps<OrderType>['columns'] = [
+  const columns = [
     {
-      title: 'Order ID',
-      dataIndex: '_id',
-      key: '_id',
-      width: 100,
+      title: "Customer",
+      render: (r: OrderType) => `${r.first_name} ${r.last_name}`,
+    },
+    { title: "Email", dataIndex: "email" },
+    { title: "City", dataIndex: "city" },
+    {
+      title: "Status",
+      dataIndex: "order_status",
+      render: (s: number) => <Tag color="blue">Status {s}</Tag>,
     },
     {
-      title: 'Customer',
-      key: 'customer',
-      render: (_, record) => {
-        console.log("record",record);
-        console.log("record customer",record.customer_id);
-        console.log("record first_name",record.customer_id.first_name);
-        return (
-        <div>
-          <div>{`${record.customer_id.first_name} ${record.customer_id.last_name}`}</div>
-          <div style={{ fontSize: '12px', color: '#888' }}>{record.customer_id.email}</div>
-        </div>
-      )}
-    },
-    {
-      title: 'Order Date',
-      dataIndex: 'order_date',
-      key: 'order_date',
-      render: (date: string) => new Date(date).toLocaleDateString(),
-    },
-    {
-      title: 'Status',
-      dataIndex: 'order_status',
-      key: 'order_status',
-      render: (status: string) => (
-        <Tag color={getStatusColor(status)}>{status}</Tag>
-      ),
-    },
-    {
-      title: 'Payment',
-      dataIndex: 'payment_type',
-      key: 'payment_type',
-    },
-    {
-      title: 'Shipping Address',
-      dataIndex: 'street',
-      key: 'street',
-      render: (_, record) => (
-        <div>
-          {record.street}, {record.city}
-        </div>
-      ),
-    },
-    {
-      title: 'Action',
-      key: 'action',
-      render: (_, record) => (
-        <Space size="middle">
-          <Button
-            icon={<EyeOutlined />}
-            onClick={() => handleViewDetail(record)}
-          >
-            View Details
-          </Button>
-        </Space>
-      ),
+      title: "Order Date",
+      dataIndex: "order_date",
+      render: (d: string) => new Date(d).toLocaleDateString(),
     },
   ];
-
-  const productColumns: TableProps<ProductInOrder>['columns'] = [
-    {
-      title: 'Product Name',
-      dataIndex: 'product_name',
-      key: 'product_name',
-    },
-    {
-      title: 'Price',
-      dataIndex: 'price',
-      key: 'price',
-      render: (price: number) => `$${price.toFixed(2)}`,
-    },
-    {
-      title: 'Discount (%)',
-      dataIndex: 'discount',
-      key: 'discount',
-    },
-    {
-      title: 'Quantity',
-      dataIndex: 'quantity',
-      key: 'quantity',
-    },
-    {
-      title: 'Subtotal',
-      key: 'subtotal',
-      render: (_, record) => {
-        const subtotal = record.price * record.quantity * (1 - record.discount / 100);
-        return `$${subtotal.toFixed(2)}`;
-      },
-    },
-  ];
-
-  // const calculateTotal = (order: OrderType) => {
-  //   return order.order_details.reduce((total, item) => {
-  //     return total + (item.price * item.quantity * (1 - item.discount / 100));
-  //   }, 0);
-  // };
 
   return (
-    <>
-      <Flex justify='space-between' align='center'>
-        <h1>Order List</h1>
-      </Flex>
+    <div style={{ padding: 24 }}>
+      <Title level={2}>Dashboard</Title>
 
-      <Table<OrderType>
-        key={'_id'}
-        loading={queryOrders.isLoading}
-        columns={columns}
-        dataSource={queryOrders.data?.orders || []}
-        pagination={false}
-      />
+      {/* Summary Cards */}
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic title="Total Orders" value={totalOrders} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic title="Completed" value={completed} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic title="Pending" value={pending} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic title="Cancelled" value={cancelled} />
+          </Card>
+        </Col>
+      </Row>
 
-      <div style={{ textAlign: 'right', marginTop: 30 }}>
-        <Pagination
-          defaultCurrent={1}
-          current={int_page}
-          total={queryOrders.data?.totalRecords || 0}
-          showSizeChanger={false}
-          pageSize={int_limit}
-          onChange={(page, pageSize) => {
-            navigate(`?page=${page}&limit=${pageSize}`);
-          }}
-          showQuickJumper
-          showTotal={(total) => `Total ${total} items`}
-        />
-      </div>
-
-      <Modal
-        title={`Order Details - #${selectedOrder?._id}`}
-        open={isModalDetailOpen}
-        onCancel={handleModalDetailCancel}
-        footer={[
-          <Button key="close" onClick={handleModalDetailCancel}>
-            Close
-          </Button>
-        ]}
-        width={900}
-      >
-        {selectedOrder && (
-          <div style={{ maxHeight: 500, overflowY: 'auto' }}>
-            <Descriptions bordered column={2} size="small" style={{ marginBottom: 20 }}>
-              <Descriptions.Item label="Order ID" span={2}>
-                #{selectedOrder._id}
-              </Descriptions.Item>
-              <Descriptions.Item label="Status" span={2}>
-                <Tag color={getStatusColor(selectedOrder.order_status)}>{selectedOrder.order_status}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Order Date">
-                {new Date(selectedOrder.order_date).toLocaleDateString()}
-              </Descriptions.Item>
-              <Descriptions.Item label="Required Date">
-                {new Date(selectedOrder.require_date).toLocaleDateString()}
-              </Descriptions.Item>
-              {selectedOrder.shipping_date && (
-                <Descriptions.Item label="Shipped Date" span={2}>
-                  {new Date(selectedOrder.shipping_date).toLocaleDateString()}
-                </Descriptions.Item>
-              )}
-              <Descriptions.Item label="Payment Type" span={2}>
-                {selectedOrder.payment_type}
-              </Descriptions.Item>
-              <Descriptions.Item label="Customer" span={2}>
-                {`${selectedOrder.customer_id.first_name} ${selectedOrder.customer_id.last_name}`}
-                <br />
-                Email: {selectedOrder.customer_id.email}
-                <br />
-                Phone: {selectedOrder.customer_id.phone}
-              </Descriptions.Item>
-              <Descriptions.Item label="Staff" span={2}>
-                {`${selectedOrder.staff_id.first_name} ${selectedOrder.staff_id.last_name}`}
-                <br />
-                Email: {selectedOrder.staff_id.email}
-              </Descriptions.Item>
-              <Descriptions.Item label="Shipping Address" span={2}>
-                {selectedOrder.street}, {selectedOrder.city}
-              </Descriptions.Item>
-              {selectedOrder.description && (
-                <Descriptions.Item label="Description" span={2}>
-                  {selectedOrder.description}
-                </Descriptions.Item>
-              )}
-            </Descriptions>
-
-            <h3>Order Items</h3>
-            <Table<ProductInOrder>
-              columns={productColumns}
-              dataSource={selectedOrder.order_details}
-              pagination={false}
-              size="small"
-              rowKey="_id"
+      {/* Charts */}
+      <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+        <Col xs={24} md={16}>
+          <Card title="Orders Over Time">
+            <Line
+              data={stats?.lineData ?? []}
+              xField="date"
+              yField="count"
+              smooth
+              height={300}
             />
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card title="Order Status Distribution">
+            <Pie
+              data={(stats?.pieData ?? []).filter(
+                (item) =>
+                  !["11", "3"].includes(item.type.replace("Status ", ""))
+              )}
+              angleField="value"
+              colorField="type"
+              radius={0.9}
+              innerRadius={0.6}
+              label={{
+                text: "value",
+                style: { fontWeight: "bold" },
+              }}
+              legend={{
+                color: {
+                  title: false,
+                  position: "right",
+                  rowPadding: 5,
+                },
+              }}
+              statistic={{
+                title: {
+                  content: "Total Orders",
+                  style: {
+                    fontSize: 14,
+                    fontWeight: "normal",
+                    color: "#666",
+                  },
+                },
+                content: {
+                  content: `${ordersData?.totalRecords ?? 0}`,
+                  style: {
+                    fontSize: 24,
+                    fontWeight: "bold",
+                    color: "#000",
+                  },
+                },
+              }}
+              tooltip={{
+                title: "type",
+                items: [{ field: "value" }],
+              }}
+              animation={{
+                appear: { animation: "wave-in", duration: 1000 },
+              }}
+              height={300}
+            />
+          </Card>
+        </Col>
+      </Row>
 
-            {/* <div style={{ textAlign: 'right', marginTop: 20, fontSize: 16, fontWeight: 'bold' }}>
-              Total: ${calculateTotal(selectedOrder).toFixed(2)}
-            </div> */}
-          </div>
-        )}
-      </Modal>
-    </>
+      {/* Recent Orders */}
+      <Card title="Recent Orders" style={{ marginTop: 24 }}>
+        <Table
+          loading={isLoading}
+          dataSource={ordersData?.orders ?? []}
+          columns={columns}
+          rowKey="_id"
+          pagination={false}
+        />
+      </Card>
+    </div>
   );
 };
 
-export default OrdersPage;
+export default DashboardPage;

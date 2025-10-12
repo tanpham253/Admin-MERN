@@ -21,30 +21,18 @@ const UserSearchForm = ({ onSearch }: UserSearchFormProps) => {
       style={{ marginBottom: 16 }}
     >
       <Form.Item name="search">
-        <Input
-          placeholder="Search by name or email"
-          style={{ width: 250 }}
-          allowClear
-        />
+        <Input placeholder="Search by name or email" allowClear style={{ width: 250 }} />
       </Form.Item>
 
       <Form.Item name="role">
-        <Select
-          placeholder="Filter by role"
-          style={{ width: 150 }}
-          allowClear
-        >
+        <Select placeholder="Filter by role" allowClear style={{ width: 150 }}>
           <Select.Option value="staff">Staff</Select.Option>
           <Select.Option value="admin">Admin</Select.Option>
         </Select>
       </Form.Item>
 
       <Form.Item name="active">
-        <Select
-          placeholder="Filter by status"
-          style={{ width: 150 }}
-          allowClear
-        >
+        <Select placeholder="Filter by status" allowClear style={{ width: 150 }}>
           <Select.Option value="true">Active</Select.Option>
           <Select.Option value="false">Inactive</Select.Option>
         </Select>
@@ -55,7 +43,7 @@ const UserSearchForm = ({ onSearch }: UserSearchFormProps) => {
           <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>
             Search
           </Button>
-          <Button onClick={handleReset} icon={<ReloadOutlined />}>
+          <Button htmlType="button" onClick={handleReset} icon={<ReloadOutlined />}>
             Reset
           </Button>
         </Space>

@@ -1,15 +1,27 @@
 import { Table, Tag } from "antd";
 import type { ColumnsType, TableProps } from "antd/es/table";
-import type { UserType } from "../types/user.type";
+import type { CustomerType } from "../types/customer.type";
 
-interface UserTableProps {
-  users: UserType[];
+interface CustomerTableProps {
+  customers: CustomerType[];
   loading: boolean;
   onTableChange?: (sortField: string, sortOrder: "asc" | "desc") => void;
 }
 
-const UserTable = ({ users, loading, onTableChange }: UserTableProps) => {
-  const columns: ColumnsType<UserType> = [
+const CustomerTable = ({ customers, loading, onTableChange }: CustomerTableProps) => {
+  const columns: ColumnsType<CustomerType> = [
+    {
+      title: "First Name",
+      dataIndex: "first_name",
+      key: "first_name",
+      sorter: true,
+    },
+    {
+      title: "Last Name",
+      dataIndex: "last_name",
+      key: "last_name",
+      sorter: true,
+    },
     {
       title: "Email",
       dataIndex: "email",
@@ -18,55 +30,40 @@ const UserTable = ({ users, loading, onTableChange }: UserTableProps) => {
       sorter: true,
     },
     {
-      title: "First Name",
-      dataIndex: "first_name",
-      key: "first_name",
+      title: "Phone",
+      dataIndex: "phone",
+      key: "phone",
       width: 150,
       sorter: true,
-    },
-    {
-      title: "Last Name",
-      dataIndex: "last_name",
-      key: "last_name",
-      width: 150,
-      sorter: true,
-    },
-    {
-      title: "Role",
-      dataIndex: "roles",
-      key: "roles",
-      width: 150,
-      render: (roles: string[]) => (
-        <>
-          {roles.map((r) => (
-            <Tag key={r} color={r === "admin" ? "blue" : "green"}>
-              {r.toUpperCase()}
-            </Tag>
-          ))}
-        </>
-      ),
     },
     {
       title: "Status",
       dataIndex: "active",
       key: "active",
-      width: 120,
+      width: 100,
       render: (active: boolean) => (
-        <Tag color={active ? "success" : "default"}>
+        <Tag color={active ? "green" : "default"}>
           {active ? "Active" : "Inactive"}
         </Tag>
       ),
+    },
+    {
+      title: "City",
+      dataIndex: "city",
+      key: "city",
+      sorter: true,
     },
     {
       title: "Created At",
       dataIndex: "createdAt",
       key: "createdAt",
       width: 180,
+      sorter: true,
       render: (date: string) => new Date(date).toLocaleDateString(),
     },
   ];
 
-  const handleTableChange: TableProps<UserType>["onChange"] = (
+  const handleTableChange: TableProps<CustomerType>["onChange"] = (
     _pagination,
     _filters,
     sorter
@@ -81,18 +78,14 @@ const UserTable = ({ users, loading, onTableChange }: UserTableProps) => {
   return (
     <Table
       columns={columns}
-      dataSource={users ?? []}
+      dataSource={customers}
       loading={loading}
       rowKey="_id"
       onChange={handleTableChange}
-      pagination={{
-        pageSize: 10,
-        showSizeChanger: true,
-        showTotal: (total) => `Total ${total} users`,
-      }}
+      pagination={false}
       scroll={{ x: 900 }}
     />
   );
 };
 
-export default UserTable;
+export default CustomerTable;
