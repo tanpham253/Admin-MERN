@@ -5,6 +5,7 @@ import { routesAdministrator } from '../modules/administrator/administrator.rout
 import { routesProducts } from '../modules/products/product.route';
 import { routesBrands } from '../modules/brand/brand.route';
 import { routesOrders } from '../modules/orders/order.route';
+import { routesCategories } from '../modules/categories/category.route';
 
 export type RouteItem = {
   path?: string;
@@ -29,5 +30,7 @@ export const routes: RouteItem[] = [
   ...routesOrders,
   ...routesAuth,
   ...routesProducts,
+  ...routesBrands,
+  ...routesCategories,
   ...routesAdministrator,
 ];

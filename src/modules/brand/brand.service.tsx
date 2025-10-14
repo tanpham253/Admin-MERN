@@ -1,43 +1,33 @@
 import apiClient from "../../libs/axiosClient";
+import type { BrandType, BrandResponse } from "./brand.type";
 
-export interface BrandType {
-  _id: string;
-  brand_name: string;
-  description: string;
-  slug: string;
-  image: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface BrandResponse {
-  brands: BrandType[];
-  page: number;
-  limit: number;
-  totalRecords: number;
-}
-
-export const fetchBrands = async (): Promise<BrandType[]> => {
-  // apiClient returns response.data already (see interceptor)
-  const data: BrandResponse = await apiClient.get("/v1/brands");
-
-  // Always return a defined value (never undefined)
-  console.log("DEBUG brands raw response =>", data?.brands);
-  return data?.brands;
+// === FETCH ALL
+export const fetchBrands = async (
+  page = 1,
+  limit = 5,
+  keyword = ""
+): Promise<BrandResponse> => {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit), keyword });
+  const data: BrandResponse = await apiClient.get(`/v1/brands?${params.toString()}`);
+  console.log("DEBUG fetched brands =>", `/v2/brands?${params.toString()}`);
+  return data;
 };
 
-export const fetchCreateBrand = async (formData: any) => {
-  const response = await apiClient.post(`/v1/brands`, formData);
+// === CREATE
+export const fetchCreateBrand = async (formData: BrandType) => {
+  const response = await apiClient.post(`/v2/brands`, formData);
   return response.data;
 };
 
-export const fetchUpdateBrand = async (data: { id: string; formData: any }) => {
+// === UPDATE
+export const fetchUpdateBrand = async (data: { id: string; formData: BrandType }) => {
   const { id, formData } = data;
-  const response = await apiClient.put(`/v1/brands/${id}`, formData);
+  const response = await apiClient.put(`/v2/brands/${id}`, formData);
   return response.data;
 };
 
+// === DELETE
 export const fetchDeleteBrand = async (id: string) => {
-  const response = await apiClient.delete(`/v1/brands/${id}`);
+  const response = await apiClient.delete(`/v2/brands/${id}`);
   return response.data;
 };

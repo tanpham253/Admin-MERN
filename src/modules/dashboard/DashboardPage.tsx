@@ -1,9 +1,10 @@
 import React from "react";
-import { Card, Col, Row, Statistic, Table, Typography, Tag } from "antd";
+import { Card, Col, Row, Statistic, Table, Typography, Tag, Space } from "antd";
 import { Line, Pie } from "@ant-design/plots";
 import { useQuery } from "@tanstack/react-query";
 import { fetchOrders, fetchOrderStats } from "./dashboard.service";
 import type { OrderType } from "../orders/order.type";
+import { TeamOutlined } from "@ant-design/icons";
 
 const { Title } = Typography;
 
@@ -47,7 +48,19 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <Title level={2}>Dashboard</Title>
+      <Card>
+          <Space align="center" size="middle">
+            <TeamOutlined style={{ fontSize: 32, color: '#1890ff' }} />
+            <div>
+              <Title level={2} style={{ margin: 0 }}>
+                DashBoard
+              </Title>
+              <Typography.Text type="secondary">
+                View and orders and .....
+              </Typography.Text>
+            </div>
+          </Space>
+        </Card>
 
       {/* Summary Cards */}
       <Row gutter={[16, 16]}>

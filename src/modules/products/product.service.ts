@@ -1,5 +1,6 @@
 import apiClient from "../../libs/axiosClient";
 import type { CategoryType, ProductType } from "./product.type";
+import type { BrandType } from "../brand/brand.type";
 
 
 export const fetchCategories = async (): Promise<CategoryType[]> => {
@@ -7,10 +8,15 @@ export const fetchCategories = async (): Promise<CategoryType[]> => {
  return response.data
 };
 
-export const fetchBrands = async (): Promise<any> => {
-  const response = await apiClient.get(`/v1/brands`);
-  console.log("DEBUG brands raw response =>", response);
-  return response;
+export const fetchBrands = async (): Promise<BrandType[]> => {
+  try {
+    const response = await apiClient.get<BrandType[]>("/v1/brands");
+    console.log("DEBUG brands raw response =>", response);
+    return response;
+  } catch (error) {
+    console.error("❌ Error fetching brands:", error);
+    throw error;
+  }
 };
 
 //Hàm get Sản phẩm
@@ -32,7 +38,7 @@ export const updateData = async (data: {id: string, formData: ProductType}) => {
 };
 
 
-export const fetchCreate = async (formData: any) => {
+export const fetchCreate = async (formData: ProductType) => {
    const response = await apiClient.post(`/v1/products`, formData, {
       headers: {
          'Content-Type': 'multipart/form-data'

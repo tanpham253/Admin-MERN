@@ -1,15 +1,14 @@
-export interface BrandType {
+export interface CategoryType {
   _id: string;
-  brand_name: string;
+  category_name: string;
   description?: string;
   slug: string;
-  image?: string;
   createdAt?: string;
   updatedAt?: string;
 }
 
-export interface BrandResponse {
-  brands: BrandType[];
+export interface CategoriesResponse {
+  categories: CategoryType[];
   page: number;
   limit: number;
   totalRecords: number;

@@ -94,7 +94,7 @@ const handleModalAddOk = () => {
   const handleModalAddCancel = () => {
     setIsModalAddOpen(false);
   };
-  const onFinishAdd = async (values: any) => {
+  const onFinishAdd = async (values: Record<string, string | number | Blob>) => {
     console.log('<<=== 🚀 values ===>>',values);
     if (fileList.length === 0) {
       message.error('Vui lòng chọn file trước khi tải lên.');
@@ -131,7 +131,7 @@ const handleModalAddOk = () => {
     fileList,
   };
 
-  const onFinishFailed = (errorInfo: any) => {
+  const onFinishFailed = (errorInfo: string) => {
     console.log('Failed:', errorInfo);
   };
 

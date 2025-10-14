@@ -1,5 +1,6 @@
 import { DatabaseOutlined } from "@ant-design/icons";
 import type { RouteItem } from "../../routes";
+import BrandsPage from "./BrandsPage";
 // import BrandsPage from "./BrandPage";
 
 export const routesBrands: RouteItem[] = [
