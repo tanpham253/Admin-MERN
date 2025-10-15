@@ -1,7 +1,6 @@
 import {
   Button,
   Descriptions,
-  Flex,
   Input,
   message,
   Modal,
@@ -9,11 +8,27 @@ import {
   Space,
   Table,
   Tag,
+  Image,
 } from "antd";
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { SearchOutlined, EyeOutlined, ReloadOutlined, PlusOutlined } from "@ant-design/icons";
-import { fetchBrands, fetchCreateBrand, fetchUpdateBrand, fetchDeleteBrand } from "./brand.service";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  SearchOutlined,
+  EyeOutlined,
+  ReloadOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
+import {
+  fetchBrands,
+  fetchCreateBrand,
+  fetchUpdateBrand,
+  fetchDeleteBrand,
+} from "./brand.service";
 import type { BrandResponse, BrandType } from "./brand.type";
 
 const BrandsPage = () => {
@@ -30,20 +45,24 @@ const BrandsPage = () => {
   const [formValues, setFormValues] = useState<Partial<BrandType>>({});
 
   // === QUERY ===
-  const { data, isLoading, refetch } = useQuery<BrandResponse, Error>({
+  const { data, isLoading } = useQuery<BrandResponse, Error>({
     queryKey: ["brands", page, keyword],
     queryFn: () => fetchBrands(page, limit, keyword),
     placeholderData: keepPreviousData,
   });
-  // === HANDLERS ===
-const handleSearch = () => {
-  // Khi nhấn Enter hoặc icon tìm kiếm, luôn reset về trang 1 và fetch lại dữ liệu
-  setPage(1);
-  refetch();
-};
 
-  const brands = Array.isArray(data) ? data : data?.brands ?? [];
-  const totalRecords = Array.isArray(data) ? data.length : data?.totalRecords ?? 0;
+  const brands = data?.brands ?? [];
+  const totalRecords = data?.totalRecords ?? 0;
+
+  // === HANDLERS ===
+  const handleSearch = () => {
+    setPage(1);
+    queryClient.invalidateQueries({ queryKey: ["brands"] });
+  };
+
+  const handleReload = () => {
+    queryClient.invalidateQueries({ queryKey: ["brands"] });
+  };
 
   // === MUTATIONS ===
   const createMutation = useMutation({
@@ -54,7 +73,8 @@ const handleSearch = () => {
       setIsModalFormOpen(false);
       setFormValues({});
     },
-    onError: (err: any) => message.error(err.message || "Lỗi khi thêm thương hiệu"),
+    onError: (err: any) =>
+      message.error(err.message || "Lỗi khi thêm thương hiệu"),
   });
 
   const updateMutation = useMutation({
@@ -66,7 +86,8 @@ const handleSearch = () => {
       setEditingBrand(null);
       setFormValues({});
     },
-    onError: (err: any) => message.error(err.message || "Lỗi khi cập nhật thương hiệu"),
+    onError: (err: any) =>
+      message.error(err.message || "Lỗi khi cập nhật thương hiệu"),
   });
 
   const deleteMutation = useMutation({
@@ -75,22 +96,14 @@ const handleSearch = () => {
       message.success("🗑️ Xóa thương hiệu thành công!");
       queryClient.invalidateQueries({ queryKey: ["brands"] });
     },
-    onError: (err: any) => message.error(err.message || "Lỗi khi xóa thương hiệu"),
+    onError: (err: any) =>
+      message.error(err.message || "Lỗi khi xóa thương hiệu"),
   });
 
-  // === HANDLERS ===
-
-  
-  const handleSearch = () => setPage(1);
-
+  // === CRUD Handlers ===
   const handleViewDetail = (record: BrandType) => {
     setSelectedBrand(record);
     setIsModalDetailOpen(true);
-  };
-
-  const handleModalDetailCancel = () => {
-    setIsModalDetailOpen(false);
-    setSelectedBrand(null);
   };
 
   const handleEdit = (record: BrandType) => {
@@ -100,7 +113,14 @@ const handleSearch = () => {
   };
 
   const handleDelete = (id: string) => {
-    deleteMutation.mutate(id);
+    Modal.confirm({
+      title: "Xác nhận xóa",
+      content: "Bạn có chắc chắn muốn xóa thương hiệu này không?",
+      okText: "Xóa",
+      okType: "danger",
+      cancelText: "Hủy",
+      onOk: () => deleteMutation.mutate(id),
+    });
   };
 
   const handleSubmitForm = () => {
@@ -108,10 +128,21 @@ const handleSearch = () => {
       message.warning("Vui lòng nhập tên thương hiệu!");
       return;
     }
+
+    // Sinh slug tự động
+    const slug = formValues.slug
+      ? formValues.slug.trim().toLowerCase().replace(/\s+/g, "-")
+      : formValues.brand_name.trim().toLowerCase().replace(/\s+/g, "-");
+
+    const finalData = { ...formValues, slug };
+
     if (editingBrand) {
-      updateMutation.mutate({ id: editingBrand._id!, formData: formValues });
+      updateMutation.mutate({
+        id: editingBrand._id!,
+        formData: finalData as BrandType,
+      });
     } else {
-      createMutation.mutate(formValues as BrandType);
+      createMutation.mutate(finalData as BrandType);
     }
   };
 
@@ -132,7 +163,9 @@ const handleSearch = () => {
       title: "Mô tả",
       dataIndex: "description",
       key: "description",
-      render: (desc: string) => desc || <Tag color="default">Không có mô tả</Tag>,
+      ellipsis: true,
+      render: (desc: string) =>
+        desc ? desc : <Tag color="default">Không có mô tả</Tag>,
     },
     {
       title: "Thao tác",
@@ -156,8 +189,15 @@ const handleSearch = () => {
   return (
     <>
       {/* Header */}
-      <Flex justify="space-between" align="center" style={{ marginBottom: 16 }}>
-        <h1>Brands</h1>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 16,
+        }}
+      >
+        <h1>Thương hiệu</h1>
         <Space>
           <Input
             placeholder="Tìm kiếm thương hiệu..."
@@ -179,11 +219,11 @@ const handleSearch = () => {
           >
             Thêm thương hiệu
           </Button>
-          <Button icon={<ReloadOutlined />} onClick={() => queryClient.invalidateQueries({ queryKey: ["brands"] })}>
+          <Button icon={<ReloadOutlined />} onClick={handleReload}>
             Làm mới
           </Button>
         </Space>
-      </Flex>
+      </div>
 
       {/* Table */}
       <Table
@@ -201,7 +241,10 @@ const handleSearch = () => {
           total={totalRecords}
           pageSize={limit}
           showSizeChanger={false}
-          onChange={(p) => setPage(p)}
+          onChange={(p) => {
+            setPage(p);
+            queryClient.invalidateQueries({ queryKey: ["brands"] });
+          }}
           showTotal={(total) => `Tổng ${total} thương hiệu`}
         />
       </div>
@@ -210,16 +253,26 @@ const handleSearch = () => {
       <Modal
         title={`Chi tiết thương hiệu - ${selectedBrand?.brand_name}`}
         open={isModalDetailOpen}
-        onCancel={handleModalDetailCancel}
-        footer={[
-          <Button key="close" onClick={handleModalDetailCancel}>
-            Đóng
-          </Button>,
-        ]}
+        onCancel={() => {
+          setIsModalDetailOpen(false);
+          setSelectedBrand(null);
+        }}
+        footer={<Button onClick={() => setIsModalDetailOpen(false)}>Đóng</Button>}
         width={700}
       >
         {selectedBrand && (
           <Descriptions bordered column={2} size="small">
+            <Descriptions.Item label="Logo" span={2}>
+              {selectedBrand.image ? (
+                <Image
+                  src={selectedBrand.image}
+                  alt={selectedBrand.brand_name}
+                  width={120}
+                />
+              ) : (
+                "Không có hình ảnh"
+              )}
+            </Descriptions.Item>
             <Descriptions.Item label="Tên thương hiệu" span={2}>
               {selectedBrand.brand_name}
             </Descriptions.Item>
@@ -229,12 +282,12 @@ const handleSearch = () => {
             <Descriptions.Item label="Mô tả" span={2}>
               {selectedBrand.description || "Không có mô tả"}
             </Descriptions.Item>
-            <Descriptions.Item label="Ngày tạo" span={2}>
+            <Descriptions.Item label="Ngày tạo" span={1}>
               {selectedBrand.createdAt
                 ? new Date(selectedBrand.createdAt).toLocaleDateString()
                 : "Không có"}
             </Descriptions.Item>
-            <Descriptions.Item label="Cập nhật" span={2}>
+            <Descriptions.Item label="Cập nhật" span={1}>
               {selectedBrand.updatedAt
                 ? new Date(selectedBrand.updatedAt).toLocaleDateString()
                 : "Không có"}
@@ -253,24 +306,37 @@ const handleSearch = () => {
           setFormValues({});
         }}
         onOk={handleSubmitForm}
-        confirmLoading={createMutation.isPending || updateMutation.isPending}
+        confirmLoading={createMutation.isLoading || updateMutation.isLoading}
       >
         <Space direction="vertical" style={{ width: "100%" }}>
           <Input
             placeholder="Tên thương hiệu"
             value={formValues.brand_name}
-            onChange={(e) => setFormValues({ ...formValues, brand_name: e.target.value })}
+            onChange={(e) =>
+              setFormValues({ ...formValues, brand_name: e.target.value })
+            }
           />
           <Input
-            placeholder="Slug"
+            placeholder="Slug (tự động nếu bỏ trống)"
             value={formValues.slug}
-            onChange={(e) => setFormValues({ ...formValues, slug: e.target.value })}
+            onChange={(e) =>
+              setFormValues({ ...formValues, slug: e.target.value })
+            }
           />
           <Input.TextArea
             placeholder="Mô tả"
             rows={3}
             value={formValues.description}
-            onChange={(e) => setFormValues({ ...formValues, description: e.target.value })}
+            onChange={(e) =>
+              setFormValues({ ...formValues, description: e.target.value })
+            }
+          />
+          <Input
+            placeholder="URL hình ảnh logo"
+            value={formValues.image}
+            onChange={(e) =>
+              setFormValues({ ...formValues, image: e.target.value })
+            }
           />
         </Space>
       </Modal>
