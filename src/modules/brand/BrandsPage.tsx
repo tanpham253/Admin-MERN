@@ -68,36 +68,36 @@ const BrandsPage = () => {
   const createMutation = useMutation({
     mutationFn: fetchCreateBrand,
     onSuccess: () => {
-      message.success("✅ Thêm thương hiệu thành công!");
+      message.success("✅ Add brand successfully!");
       queryClient.invalidateQueries({ queryKey: ["brands"] });
       setIsModalFormOpen(false);
       setFormValues({});
     },
     onError: (err: any) =>
-      message.error(err.message || "Lỗi khi thêm thương hiệu"),
+      message.error(err.message || "Error adding brand"),
   });
 
   const updateMutation = useMutation({
     mutationFn: fetchUpdateBrand,
     onSuccess: () => {
-      message.success("✅ Cập nhật thương hiệu thành công!");
+      message.success("✅ Successful brand update!");
       queryClient.invalidateQueries({ queryKey: ["brands"] });
       setIsModalFormOpen(false);
       setEditingBrand(null);
       setFormValues({});
     },
     onError: (err: any) =>
-      message.error(err.message || "Lỗi khi cập nhật thương hiệu"),
+      message.error(err.message || "Error while updating brand"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: fetchDeleteBrand,
     onSuccess: () => {
-      message.success("🗑️ Xóa thương hiệu thành công!");
+      message.success("🗑️ Brand removal successful!");
       queryClient.invalidateQueries({ queryKey: ["brands"] });
     },
     onError: (err: any) =>
-      message.error(err.message || "Lỗi khi xóa thương hiệu"),
+      message.error(err.message || "Error while deleting brand"),
   });
 
   // === CRUD Handlers ===
@@ -114,18 +114,18 @@ const BrandsPage = () => {
 
   const handleDelete = (id: string) => {
     Modal.confirm({
-      title: "Xác nhận xóa",
-      content: "Bạn có chắc chắn muốn xóa thương hiệu này không?",
-      okText: "Xóa",
+      title: "Confirm deletion",
+      content: "Are you sure you want to delete this brand??",
+      okText: "Delete",
       okType: "danger",
-      cancelText: "Hủy",
+      cancelText: "Cancel",
       onOk: () => deleteMutation.mutate(id),
     });
   };
 
   const handleSubmitForm = () => {
     if (!formValues.brand_name) {
-      message.warning("Vui lòng nhập tên thương hiệu!");
+      message.warning("Please enter brand name!");
       return;
     }
 
@@ -149,7 +149,7 @@ const BrandsPage = () => {
   // === COLUMNS ===
   const columns = [
     {
-      title: "Tên thương hiệu",
+      title: "Brand name",
       dataIndex: "brand_name",
       key: "brand_name",
       render: (text: string) => <b>{text}</b>,
@@ -160,12 +160,12 @@ const BrandsPage = () => {
       key: "slug",
     },
     {
-      title: "Mô tả",
+      title: "Description",
       dataIndex: "description",
       key: "description",
       ellipsis: true,
       render: (desc: string) =>
-        desc ? desc : <Tag color="default">Không có mô tả</Tag>,
+        desc ? desc : <Tag color="default">No description</Tag>,
     },
     {
       title: "Thao tác",
@@ -173,13 +173,13 @@ const BrandsPage = () => {
       render: (_: any, record: BrandType) => (
         <Space>
           <Button icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>
-            Chi tiết
+            Detail
           </Button>
           <Button type="primary" onClick={() => handleEdit(record)}>
-            Sửa
+            Edit
           </Button>
           <Button danger onClick={() => handleDelete(record._id!)}>
-            Xóa
+            Delete
           </Button>
         </Space>
       ),
@@ -197,10 +197,10 @@ const BrandsPage = () => {
           marginBottom: 16,
         }}
       >
-        <h1>Thương hiệu</h1>
+        <h1>Brands</h1>
         <Space>
           <Input
-            placeholder="Tìm kiếm thương hiệu..."
+            placeholder="Brand Search..."
             prefix={<SearchOutlined />}
             style={{ width: 300 }}
             value={keyword}
@@ -217,10 +217,10 @@ const BrandsPage = () => {
               setIsModalFormOpen(true);
             }}
           >
-            Thêm thương hiệu
+            Add brand
           </Button>
           <Button icon={<ReloadOutlined />} onClick={handleReload}>
-            Làm mới
+            Refresh
           </Button>
         </Space>
       </div>
@@ -245,19 +245,19 @@ const BrandsPage = () => {
             setPage(p);
             queryClient.invalidateQueries({ queryKey: ["brands"] });
           }}
-          showTotal={(total) => `Tổng ${total} thương hiệu`}
+          showTotal={(total) => `Total ${total} brand`}
         />
       </div>
 
       {/* Modal - Detail */}
       <Modal
-        title={`Chi tiết thương hiệu - ${selectedBrand?.brand_name}`}
+        title={`Brand Detail - ${selectedBrand?.brand_name}`}
         open={isModalDetailOpen}
         onCancel={() => {
           setIsModalDetailOpen(false);
           setSelectedBrand(null);
         }}
-        footer={<Button onClick={() => setIsModalDetailOpen(false)}>Đóng</Button>}
+        footer={<Button onClick={() => setIsModalDetailOpen(false)}>Close</Button>}
         width={700}
       >
         {selectedBrand && (
@@ -270,27 +270,27 @@ const BrandsPage = () => {
                   width={120}
                 />
               ) : (
-                "Không có hình ảnh"
+                "No images"
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="Tên thương hiệu" span={2}>
+            <Descriptions.Item label="Brand" span={2}>
               {selectedBrand.brand_name}
             </Descriptions.Item>
             <Descriptions.Item label="Slug" span={2}>
               {selectedBrand.slug}
             </Descriptions.Item>
-            <Descriptions.Item label="Mô tả" span={2}>
-              {selectedBrand.description || "Không có mô tả"}
+            <Descriptions.Item label="Description" span={2}>
+              {selectedBrand.description || "No description"}
             </Descriptions.Item>
-            <Descriptions.Item label="Ngày tạo" span={1}>
+            <Descriptions.Item label="Date created" span={1}>
               {selectedBrand.createdAt
                 ? new Date(selectedBrand.createdAt).toLocaleDateString()
-                : "Không có"}
+                : "None"}
             </Descriptions.Item>
-            <Descriptions.Item label="Cập nhật" span={1}>
+            <Descriptions.Item label="Update" span={1}>
               {selectedBrand.updatedAt
                 ? new Date(selectedBrand.updatedAt).toLocaleDateString()
-                : "Không có"}
+                : "None"}
             </Descriptions.Item>
           </Descriptions>
         )}
@@ -298,7 +298,7 @@ const BrandsPage = () => {
 
       {/* Modal - Add/Edit */}
       <Modal
-        title={editingBrand ? "Cập nhật thương hiệu" : "Thêm thương hiệu"}
+        title={editingBrand ? "Brand update" : "Add brand"}
         open={isModalFormOpen}
         onCancel={() => {
           setIsModalFormOpen(false);
@@ -310,21 +310,21 @@ const BrandsPage = () => {
       >
         <Space direction="vertical" style={{ width: "100%" }}>
           <Input
-            placeholder="Tên thương hiệu"
+            placeholder="Brand name"
             value={formValues.brand_name}
             onChange={(e) =>
               setFormValues({ ...formValues, brand_name: e.target.value })
             }
           />
           <Input
-            placeholder="Slug (tự động nếu bỏ trống)"
+            placeholder="Slug (automatically if left blank)"
             value={formValues.slug}
             onChange={(e) =>
               setFormValues({ ...formValues, slug: e.target.value })
             }
           />
           <Input.TextArea
-            placeholder="Mô tả"
+            placeholder="Description"
             rows={3}
             value={formValues.description}
             onChange={(e) =>
@@ -332,7 +332,7 @@ const BrandsPage = () => {
             }
           />
           <Input
-            placeholder="URL hình ảnh logo"
+            placeholder="Logo image URL"
             value={formValues.image}
             onChange={(e) =>
               setFormValues({ ...formValues, image: e.target.value })
