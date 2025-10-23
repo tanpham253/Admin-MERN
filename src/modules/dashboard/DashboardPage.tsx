@@ -35,10 +35,28 @@ const DashboardPage: React.FC = () => {
     { title: "Email", dataIndex: "email" },
     { title: "City", dataIndex: "city" },
     {
-      title: "Status",
-      dataIndex: "order_status",
-      render: (s: number) => <Tag color="blue">Status {s}</Tag>,
-    },
+  title: "Status",
+  dataIndex: "order_status",
+  render: (s: number) => {
+    const statusMap: Record<number, { text: string; color: string }> = {
+      1: { text: "Pending", color: "#FFB945" }, // Sunset Orange
+      2: { text: "Confirmed", color: "#5B8FF9" }, // Geek Blue
+      3: { text: "Canceled", color: "#E86452" }, // Dust Red
+      4: { text: "Preparing", color: "#A97BF9" }, // Golden Purple
+      5: { text: "Shipping", color: "#5AD8A6" }, // Cyan
+      6: { text: "Cancel Shipping", color: "#FF9845" }, // Sunrise Orange
+      7: { text: "Shipped", color: "#5B8FF9" }, // Daybreak Blue
+      8: { text: "Pending Paid", color: "#F6BD16" }, // Sunrise Yellow
+      9: { text: "Paid", color: "#1E9493" }, // Dark Green
+      10: { text: "Refund", color: "#FF99C3" }, // Magenta
+      11: { text: "Finished", color: "#3de400ff" }, // Green
+    };
+
+    const current = statusMap[s] || { text: `Unknown (${s})`, color: "default" };
+    return <Tag color={current.color}>{current.text}</Tag>;
+  },
+},
+
     {
       title: "Order Date",
       dataIndex: "order_date",

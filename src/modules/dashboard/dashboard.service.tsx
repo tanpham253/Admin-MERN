@@ -30,10 +30,40 @@ export const fetchOrderStats = async () => {
     count,
   }));
 
-  const pieData = Object.entries(statusMap).map(([status, value]) => ({
-    type: `Status ${status}`,
-    value,
-  }));
+  const statusNames: Record<string, string> = {
+  "1": "Pending",
+  "2": "Confirmed",
+  "3": "Canceled",
+  "4": "Preparing",
+  "5": "Shipping",
+  "6": "Cancel Shipping",
+  "7": "Shipped",
+  "8": "Pending Paid",
+  "9": "Paid",
+  "10": "Refund",
+  "11": "Finished",
+};
+
+const statusColors: Record<string, string> = {
+  "1": "#FFB945",
+  "2": "#5B8FF9",
+  "3": "#E86452",
+  "4": "#A97BF9",
+  "5": "#5AD8A6",
+  "6": "#FF9845",
+  "7": "#5B8FF9",
+  "8": "#F6BD16",
+  "9": "#1E9493",
+  "10": "#FF99C3",
+  "11": "#3de400ff",
+};
+
+const pieData = Object.entries(statusMap).map(([status, value]) => ({
+  type: statusNames[status] || `Unknown (${status})`,
+  value,
+  color: statusColors[status],
+}));
+
 
   return { lineData, pieData };
 };
