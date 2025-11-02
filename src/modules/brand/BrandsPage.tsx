@@ -9,6 +9,8 @@ import {
   Table,
   Tag,
   Image,
+  Card,
+  Typography,
 } from "antd";
 import { useState } from "react";
 import {
@@ -22,7 +24,10 @@ import {
   EyeOutlined,
   ReloadOutlined,
   PlusOutlined,
+  TeamOutlined,
+  TrademarkOutlined,
 } from "@ant-design/icons";
+
 import {
   fetchBrands,
   fetchCreateBrand,
@@ -30,6 +35,7 @@ import {
   fetchDeleteBrand,
 } from "./brand.service";
 import type { BrandResponse, BrandType } from "./brand.type";
+const { Title } = Typography;
 
 const BrandsPage = () => {
   const queryClient = useQueryClient();
@@ -188,7 +194,7 @@ const BrandsPage = () => {
 
   return (
     <>
-      {/* Header */}
+       {/* ✅ Header fixed */}
       <div
         style={{
           display: "flex",
@@ -197,7 +203,19 @@ const BrandsPage = () => {
           marginBottom: 16,
         }}
       >
-        <h1>Brands</h1>
+        <Card>
+          <Space align="center" size="middle">
+            <TrademarkOutlined style={{ fontSize: 32, color: "#52c41a" }} />
+            <div>
+              <Title level={2} style={{ margin: 0 }}>
+                Brand Management
+              </Title>
+              <Typography.Text type="secondary">
+                View and manage all brands in the system
+              </Typography.Text>
+            </div>
+          </Space>
+        </Card>
         <Space>
           <Input
             placeholder="Brand Search..."

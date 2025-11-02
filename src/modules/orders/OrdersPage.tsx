@@ -1,3 +1,5 @@
+// ✅ ĐÃ FIX NÚT REFRESH + MẶC ĐỊNH STATUS = PENDING
+import apiClient from "../../libs/axiosClient";
 import {
   Button,
   Descriptions,
@@ -9,44 +11,56 @@ import {
   Space,
   Table,
   Tag,
+  DatePicker,
+  Select,
 } from "antd";
 import type { TableProps } from "antd";
-import { fetchOrders } from "./order.service";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type {
-  OrdersResponse,
-  OrderType,
-  ProductInOrder,
-} from "./order.type";
-import { useNavigate, useSearchParams } from "react-router";
-import { useState } from "react";
 import { EyeOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
-import { updateOrderStatus } from "./order.service";
-import { Select } from "antd";
-import type { SelectProps } from "antd";
+import { useNavigate, useSearchParams } from "react-router";
+import { useState, useEffect } from "react";
+import dayjs from "dayjs";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchOrders, updateOrderStatus } from "./order.service";
+import type { OrdersResponse, OrderType, ProductInOrder } from "./order.type";
+
+const { RangePicker } = DatePicker;
 
 const OrdersPage = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const page = params.get("page");
   const limit = params.get("limit");
+  const statusParam = params.get("status");
+
   const int_page = page ? parseInt(page) : 1;
   const int_limit = limit ? parseInt(limit) : 10;
 
   const [isModalDetailOpen, setIsModalDetailOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderType | null>(null);
 
-  // get initial status filter from URL and search
-  const statusParam = params.get("status");
-  const [searchKeyword, setSearchKeyword] = useState("");
-  const [keyword, setKeyword] = useState<string>("");
+  // ==========================
+  // ✅ DEFAULT: status = Pending (1)
+  // ==========================
   const [statusFilter, setStatusFilter] = useState<number | undefined>(
-    statusParam ? parseInt(statusParam) : undefined
+    statusParam ? parseInt(statusParam) : 1
   );
+  const [keyword, setKeyword] = useState<string>("");
+  const [startDate, setStartDate] = useState<string | undefined>();
+  const [endDate, setEndDate] = useState<string | undefined>();
+
+  const queryClient = useQueryClient();
+
   const queryOrders = useQuery({
-    queryKey: ["orders", int_page, int_limit, statusFilter, keyword],
-    queryFn: () => fetchOrders(int_page, int_limit, statusFilter, keyword),
+    queryKey: ["orders", int_page, int_limit],
+    queryFn: () => fetchOrders(int_page, int_limit),
   });
+
+  // Nếu không có param status => set luôn status=1 lên URL
+  useEffect(() => {
+    if (!statusParam) {
+      navigate(`?page=1&limit=${int_limit}&status=1`, { replace: true });
+    }
+  }, [statusParam, int_limit, navigate]);
 
   const handleViewDetail = (record: OrderType) => {
     setSelectedOrder(record);
@@ -60,17 +74,17 @@ const OrdersPage = () => {
 
   const getStatusColor = (status: number) => {
     const colors: Record<number, string> = {
-      1: "#FFB945", // Pending → Sunset Orange
-      2: "#5B8FF9", // Confirmed → Geek Blue
-      3: "#E86452", // Canceled → Dust Red
-      4: "#A97BF9", // Preparing → Golden Purple
-      5: "#5AD8A6", // Shipping → Cyan
-      6: "#FF9845", // Cancel Shipping → Sunrise Orange
-      7: "#5B8FF9", // Shipped → Daybreak Blue (same hue as Geek Blue)
-      8: "#F6BD16", // Pending Paid → Sunrise Yellow
-      9: "#1E9493", // Paid → Dark Green
-      10: "#FF99C3", // Refund → Magenta
-      11: "#3de400ff", // Finished → green
+      1: "#FFB945",
+      2: "#5B8FF9",
+      3: "#E86452",
+      4: "#A97BF9",
+      5: "#5AD8A6",
+      6: "#FF9845",
+      7: "#5B8FF9",
+      8: "#F6BD16",
+      9: "#1E9493",
+      10: "#FF99C3",
+      11: "#3de400ff",
     };
     return colors[status] || "default";
   };
@@ -92,6 +106,17 @@ const OrdersPage = () => {
     return labels[status] || "Unknown";
   };
 
+  const getPaymentTypeLabel = (type: number | string | undefined) => {
+    const num = typeof type === "string" ? parseInt(type, 10) : type;
+    const map: Record<number, string> = {
+      1: "Cash",
+      2: "Credit Card",
+      3: "Bank Transfer",
+      4: "E-Wallet",
+    };
+    return typeof num === "number" && !isNaN(num) ? map[num] || "Unknown" : "Unknown";
+  };
+
   const orderStatusOptions: { value: number; label: string }[] = [
     { value: 1, label: "Pending" },
     { value: 2, label: "Confirmed" },
@@ -105,11 +130,7 @@ const OrdersPage = () => {
     { value: 10, label: "Refunded" },
     { value: 11, label: "Completed" },
   ];
-  /* ---- Complete Button ---- */
-  const queryClient = useQueryClient();
-  console.log("Selected order details:", selectedOrder?.order_items);
 
-  // for drop down
   const mutationUpdateStatus = useMutation({
     mutationFn: ({ id, status }: { id: string; status: number }) =>
       updateOrderStatus(id, status),
@@ -126,25 +147,12 @@ const OrdersPage = () => {
     {
       title: "Customer",
       key: "customer",
-      render: (_, record) => {
-        // console.log("record", record);
-        // console.log("record customer", record.customer_id);
-        // console.log("record first_name", record.customer_id.first_name);
-
-        const firstName =
-          record.first_name || record.first_name || "N/A";
-        const lastName =
-          record.last_name || record.last_name || "";
-        const email = record.email || record.email || "No email";
-        const phone = record.phone || record.phone || "No phone";
-
-        return (
-          <div>
-            <div>{`${firstName} ${lastName}`}</div>
-            <div style={{ fontSize: "12px", color: "#888" }}>{email}</div>
-          </div>
-        );
-      },
+      render: (_, record) => (
+        <div>
+          <div>{`${record.first_name || ""} ${record.last_name || ""}`}</div>
+          <div style={{ fontSize: "12px", color: "#888" }}>{record.email}</div>
+        </div>
+      ),
     },
     {
       title: "Order Date",
@@ -161,9 +169,10 @@ const OrdersPage = () => {
       ),
     },
     {
-      title: "Payment",
+      title: "Payment Type",
       dataIndex: "payment_type",
       key: "payment_type",
+      render: (type: number) => getPaymentTypeLabel(type),
     },
     {
       title: "Customer Number",
@@ -185,21 +194,9 @@ const OrdersPage = () => {
       key: "action",
       render: (_, record) => (
         <Space size="middle">
-          <Button
-            icon={<EyeOutlined />}
-            onClick={() => handleViewDetail(record)}
-          >
+          <Button icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>
             View Details
           </Button>
-
-          {/* {record.order_status !== 4 && (
-            <Button
-              type="primary"
-              onClick={() => mutationCompleteOrder.mutate(record._id)}
-            >
-              Complete
-            </Button>
-          )} */}
         </Space>
       ),
     },
@@ -228,23 +225,48 @@ const OrdersPage = () => {
       dataIndex: "quantity",
       key: "quantity",
     },
-    // {
-    //   title: "Subtotal",
-    //   key: "subtotal",
-    //   render: (_, record) => {
-    //     const price = record.product_id?.price || 0;
-    //     const discount = record.discount || 0;
-    //     const subtotal = price * record.quantity * (1 - discount / 100);
-    //     return `$${subtotal.toFixed(2)}`;
-    //   },
-    // },
   ];
 
-  //   const calculateTotal = (order: OrderType) => {
-  //     return order.order_items.reduce((total, item) => {
-  //       return total + (item.price * item.quantity * (1 - item.discount / 100));
-  //     }, 0);
-  //   };
+  // ===== FRONTEND FILTERING =====
+  const rawOrders = queryOrders.data?.orders || [];
+
+  const filteredOrders = rawOrders.filter((order) => {
+    let matchKeyword = true;
+    if (keyword) {
+      const key = keyword.toLowerCase();
+      matchKeyword =
+        (order.first_name || "").toLowerCase().includes(key) ||
+        (order.last_name || "").toLowerCase().includes(key) ||
+        (order.email || "").toLowerCase().includes(key) ||
+        (order.phone || "").toLowerCase().includes(key);
+    }
+
+    let matchStatus = true;
+    if (statusFilter !== undefined && statusFilter !== null) {
+      matchStatus = order.order_status === statusFilter;
+    }
+
+    let matchDate = true;
+    if (startDate && endDate) {
+      const orderMs = dayjs(order.order_date).valueOf();
+      const startMs = dayjs(startDate).startOf("day").valueOf();
+      const endMs = dayjs(endDate).endOf("day").valueOf();
+      matchDate = orderMs >= startMs && orderMs <= endMs;
+    }
+
+    return matchKeyword && matchStatus && matchDate;
+  });
+
+  // ✅ Refresh thật sự reset tất cả filter + refetch
+  const handleRefresh = () => {
+    setKeyword("");
+    setStatusFilter(1); // ✅ reset về Pending luôn
+    setStartDate(undefined);
+    setEndDate(undefined);
+    navigate(`?page=1&limit=${int_limit}&status=1`);
+    queryClient.invalidateQueries({ queryKey: ["orders"] });
+    message.success("Page refreshed successfully!");
+  };
 
   return (
     <>
@@ -256,12 +278,27 @@ const OrdersPage = () => {
             prefix={<SearchOutlined />}
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            onPressEnter={() => {
-              navigate(`?page=1&limit=${int_limit}&keyword=${keyword}`);
-              queryClient.invalidateQueries({ queryKey: ["orders"] });
-            }}
+            onPressEnter={() => queryClient.invalidateQueries({ queryKey: ["orders"] })}
             allowClear
             style={{ width: 300 }}
+          />
+
+          <RangePicker
+            style={{ width: 260 }}
+            onChange={(dates) => {
+              if (dates && dates.length === 2) {
+                setStartDate(dayjs(dates[0]).format("YYYY-MM-DD"));
+                setEndDate(dayjs(dates[1]).format("YYYY-MM-DD"));
+              } else {
+                setStartDate(undefined);
+                setEndDate(undefined);
+              }
+            }}
+            value={
+              startDate && endDate
+                ? [dayjs(startDate, "YYYY-MM-DD"), dayjs(endDate, "YYYY-MM-DD")]
+                : undefined
+            }
           />
 
           <Select
@@ -269,29 +306,32 @@ const OrdersPage = () => {
             placeholder="Filter by Status"
             style={{ width: 200 }}
             value={statusFilter}
-            onChange={(value) => {
-              setStatusFilter(value);
-              navigate(
-                `?page=1&limit=${int_limit}${value ? `&status=${value}` : ""}`
-              );
-            }}
+            onChange={(value) => setStatusFilter(value)}
             options={orderStatusOptions.map((opt) => ({
               value: opt.value,
               label: (
-                <span>
+                <span key={opt.value}>
                   <Tag color={getStatusColor(opt.value)}>{opt.label}</Tag>
                 </span>
               ),
             }))}
           />
+
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={handleRefresh}
+            loading={queryOrders.isFetching}
+          >
+            Refresh
+          </Button>
         </Space>
       </Flex>
 
       <Table<OrderType>
-        key={"_id"}
+        rowKey="_id"
         loading={queryOrders.isLoading}
         columns={columns}
-        dataSource={queryOrders.data?.orders || []}
+        dataSource={filteredOrders}
         pagination={false}
       />
 
@@ -301,9 +341,9 @@ const OrdersPage = () => {
           total={queryOrders.data?.totalRecords || 0}
           pageSize={int_limit}
           showSizeChanger={false}
-          onChange={(page, pageSize) => {
-            navigate(`?page=${page}&limit=${pageSize}`);
-          }}
+          onChange={(page, pageSize) =>
+            navigate(`?page=${page}&limit=${pageSize}&status=${statusFilter || 1}`)
+          }
           showTotal={(total) => `Total ${total} orders`}
         />
       </div>
@@ -312,21 +352,12 @@ const OrdersPage = () => {
         title={`Order Details - #${selectedOrder?._id}`}
         open={isModalDetailOpen}
         onCancel={handleModalDetailCancel}
-        footer={[
-          <Button key="close" onClick={handleModalDetailCancel}>
-            Close
-          </Button>,
-        ]}
+        footer={[<Button key="close" onClick={handleModalDetailCancel}>Close</Button>]}
         width={900}
       >
         {selectedOrder && (
           <div style={{ maxHeight: 500, overflowY: "auto" }}>
-            <Descriptions
-              bordered
-              column={2}
-              size="small"
-              style={{ marginBottom: 20 }}
-            >
+            <Descriptions bordered column={2} size="small" style={{ marginBottom: 20 }}>
               <Descriptions.Item label="Order ID" span={2}>
                 #{selectedOrder._id}
               </Descriptions.Item>
@@ -335,8 +366,8 @@ const OrdersPage = () => {
                   style={{ width: 220 }}
                   value={selectedOrder.order_status}
                   disabled={
-                    selectedOrder.order_status === 3 || // Canceled
-                    selectedOrder.order_status === 11 // Completed
+                    selectedOrder.order_status === 3 ||
+                    selectedOrder.order_status === 11
                   }
                   onChange={(newStatus) => {
                     if (!selectedOrder?._id) return;
@@ -352,13 +383,14 @@ const OrdersPage = () => {
                   options={orderStatusOptions.map((opt) => ({
                     value: opt.value,
                     label: (
-                      <span>
+                      <span key={opt.value}>
                         <Tag color={getStatusColor(opt.value)}>{opt.label}</Tag>
                       </span>
                     ),
                   }))}
                 />
               </Descriptions.Item>
+
               <Descriptions.Item label="Order Date">
                 {new Date(selectedOrder.order_date).toLocaleDateString()}
               </Descriptions.Item>
@@ -367,14 +399,17 @@ const OrdersPage = () => {
                   ? new Date(selectedOrder.completed_date).toLocaleDateString()
                   : "N/A"}
               </Descriptions.Item>
+
               {selectedOrder.shipping_date && (
                 <Descriptions.Item label="Shipped Date" span={2}>
                   {new Date(selectedOrder.shipping_date).toLocaleDateString()}
                 </Descriptions.Item>
               )}
+
               <Descriptions.Item label="Payment Type" span={2}>
-                {selectedOrder.payment_type}
+                {getPaymentTypeLabel(selectedOrder.payment_type)}
               </Descriptions.Item>
+
               <Descriptions.Item label="Customer" span={2}>
                 {`${selectedOrder.first_name} ${selectedOrder.last_name}`}
                 <br />
@@ -392,11 +427,6 @@ const OrdersPage = () => {
               <Descriptions.Item label="Shipping Address" span={2}>
                 {selectedOrder.street}, {selectedOrder.city}
               </Descriptions.Item>
-              {/* {selectedOrder.description && (
-                <Descriptions.Item label="Description" span={2}>
-                  {selectedOrder.description}
-                </Descriptions.Item>
-              )} */}
             </Descriptions>
 
             <h3>Order Items</h3>
@@ -408,9 +438,20 @@ const OrdersPage = () => {
               rowKey="_id"
             />
 
-            {/* <div style={{ textAlign: 'right', marginTop: 20, fontSize: 16, fontWeight: 'bold' }}>
-              Total: ${calculateTotal(selectedOrder).toFixed(2)}
-            </div> */}
+            {selectedOrder.order_items && (
+              <div style={{ textAlign: "right", marginTop: 10, fontWeight: 600 }}>
+                Total: $
+                {selectedOrder.order_items
+                  .reduce((sum, item) => {
+                    const price = item.product_id?.price || 0;
+                    const discount = item.discount || 0;
+                    const quantity = item.quantity || 0;
+                    const discountedPrice = price * (1 - discount / 100);
+                    return sum + discountedPrice * quantity;
+                  }, 0)
+                  .toFixed(2)}
+              </div>
+            )}
           </div>
         )}
       </Modal>

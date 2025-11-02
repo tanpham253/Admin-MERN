@@ -6,6 +6,10 @@ import { routesProducts } from '../modules/products/product.route';
 import { routesBrands } from '../modules/brand/brand.route';
 import { routesOrders } from '../modules/orders/order.route';
 import { routesCategories } from '../modules/categories/category.route';
+import { routesCustomers } from "../modules/customer/customers.route";
+import { routesRoles } from '../modules/roles/routesRoles';
+import { routesDiscounts } from '../modules/discounts/routesDiscount';
+
 
 export type RouteItem = {
   path?: string;
@@ -27,10 +31,13 @@ export const generatePath = (key: string) => {
 
 export const routes: RouteItem[] = [
   ...routesDashboard, //đăng ký route dashboard
+  ...routesCustomers, 
   ...routesOrders,
   ...routesAuth,
   ...routesProducts,
   ...routesBrands,
   ...routesCategories,
+  ...routesDiscounts,
+  ...routesRoles,
   ...routesAdministrator,
 ];

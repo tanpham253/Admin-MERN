@@ -1,12 +1,14 @@
 import apiClient from "../../libs/axiosClient";
 import type { OrdersResponse, OrderType } from "./order.type";
 
-/* === Fetch Orders (with pagination, filter, search) === */
+/* === Fetch Orders (with pagination, filter, search, date range) === */
 export const fetchOrders = async (
   page: number,
   limit: number,
   order_status?: number,
-  keyword?: string
+  keyword?: string,
+  startDate?: string,
+  endDate?: string
 ): Promise<OrdersResponse> => {
   const params = new URLSearchParams({
     page: String(page),
@@ -15,6 +17,8 @@ export const fetchOrders = async (
 
   if (order_status) params.append("order_status", String(order_status));
   if (keyword) params.append("keyword", keyword);
+  if (startDate) params.append("start_date", startDate);
+  if (endDate) params.append("end_date", endDate);
 
   const response = await apiClient.get(`/v1/orders?${params.toString()}`);
   return response.data;

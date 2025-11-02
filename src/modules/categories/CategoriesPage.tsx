@@ -1,5 +1,6 @@
 import {
   Button,
+  Card,
   Descriptions,
   Input,
   message,
@@ -8,6 +9,7 @@ import {
   Space,
   Table,
   Tag,
+  Typography,
 } from "antd";
 import { useState } from "react";
 import {
@@ -21,6 +23,7 @@ import {
   EyeOutlined,
   ReloadOutlined,
   PlusOutlined,
+  TrademarkOutlined,
 } from "@ant-design/icons";
 import {
   fetchCategories,
@@ -29,6 +32,7 @@ import {
   fetchDeleteCategory,
 } from "./category.service";
 import type { CategoryType, CategoriesResponse } from "./category.type";
+import Title from "antd/es/typography/Title";
 
 const CategoriesPage = () => {
   const queryClient = useQueryClient();
@@ -195,7 +199,19 @@ const CategoriesPage = () => {
           marginBottom: 16,
         }}
       >
-        <h1>Category</h1>
+        <Card>
+          <Space align="center" size="middle">
+            <TrademarkOutlined style={{ fontSize: 32, color: "#52c41a" }} />
+            <div>
+              <Title level={2} style={{ margin: 0 }}>
+                Categories Management
+              </Title>
+              <Typography.Text type="secondary">
+                View and manage all categories in the system
+              </Typography.Text>
+            </div>
+          </Space>
+        </Card>
         <Space>
           <Input
             placeholder="Search categories..."

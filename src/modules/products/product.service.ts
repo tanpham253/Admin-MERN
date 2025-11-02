@@ -20,23 +20,10 @@ export const fetchBrands = async (): Promise<BrandType[]> => {
 };
 
 //Hàm get Sản phẩm
-export const fetchProducts = async (
-  page: number,
-  limit = 10,
-  from?: string,
-  to?: string
-) => {
-  const params = new URLSearchParams({
-    page: String(page),
-    limit: String(limit),
-  });
-  if (from) params.append("from", from);
-  if (to) params.append("to", to);
-
-  const response = await apiClient.get(`/v1/products?${params.toString()}`);
-  return response.data;
+export const fetchProducts = async (page: number, limit = 10) => {
+   const response = await apiClient.get(`/v1/products?page=${page}&limit=${limit}`);
+   return response.data
 };
-
 
 
 export const fetchDelete = async (id: string) =>{

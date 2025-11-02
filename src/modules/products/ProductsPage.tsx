@@ -1,647 +1,386 @@
-import { Button, Flex, Form, Input, InputNumber, message, Modal, Pagination, Popconfirm, Select, Space, Table, Upload } from 'antd';
-import type { GetProp, TableProps, UploadFile, UploadProps } from 'antd';
-
-import { fetchBrands, fetchCategories, fetchCreate, fetchDelete, fetchProducts, updateData } from './product.service';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ProductsResponse, ProductType } from './product.type';
-import { useNavigate, useSearchParams } from 'react-router';
-import { useAppMessage } from '../../stores/useAppMessage';
-import { useState } from 'react';
-import ActionHasRoles from '../auth/components/ActionHasRoles';
-import { UploadOutlined } from '@ant-design/icons';
-type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
+import {
+  Button,
+  Input,
+  message,
+  Modal,
+  Pagination,
+  Space,
+  Table,
+  Image,
+  Tag,
+  Card,
+  Typography,
+} from "antd";
+import { useState } from "react";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  SearchOutlined,
+  EyeOutlined,
+  ReloadOutlined,
+  PlusOutlined,
+  TrademarkOutlined,
+} from "@ant-design/icons";
+import {
+  fetchProducts,
+  fetchDelete,
+  fetchCreate,
+  updateData,
+  fetchCategories,
+  fetchBrands,
+} from "./product.service";
+import type { ProductType, ProductsResponse } from "./product.type";
+import Title from "antd/es/typography/Title";
 
 const ProductsPage = () => {
+  const queryClient = useQueryClient();
 
-  const navigate = useNavigate();
-  const {sendMessage} = useAppMessage();
+  // === STATE ===
+  const [page, setPage] = useState(1);
+  const [limit] = useState(5);
+  const [keyword, setKeyword] = useState("");
+  const [isModalFormOpen, setIsModalFormOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<ProductType | null>(
+    null
+  );
+  const [formValues, setFormValues] = useState<Partial<ProductType>>({});
+  const [isModalDetailOpen, setIsModalDetailOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(
+    null
+  );
 
-    const queryClient = useQueryClient()
-  /*----/ BEGIN  PRODUCT LIST  /-----*/
-  const [params] = useSearchParams();
-  const page = params.get('page');
-  const limit = params.get('limit');
-  const int_page = page ? parseInt(page) : 1;
-  const int_limit = limit ? parseInt(limit) : 5;
+  // === FETCH DATA ===
+  const { data, isLoading } = useQuery<ProductsResponse, Error>({
+    queryKey: ["products", page, keyword],
+    queryFn: () => fetchProducts(page, limit, keyword),
+    placeholderData: keepPreviousData,
+  });
 
-  console.log('<<=== 🚀 int_page ===>>',int_page,int_limit);
+  const products = data?.products ?? [];
+  const totalRecords = data?.totalRecords ?? 0;
 
- const queryProducts = useQuery<ProductsResponse, Error>({
-  queryKey: ['products', int_page, int_limit ],
-  queryFn: ()=>fetchProducts(int_page, int_limit)
- })
+  const queryCategories = useQuery({
+    queryKey: ["categories"],
+    queryFn: fetchCategories,
+  });
+  const queryBrands = useQuery({
+    queryKey: ["brands"],
+    queryFn: fetchBrands,
+  });
 
- console.log('<<=== 🚀 queryProducts.data ===>>',queryProducts.data);
-
- /*----/ END  PRODUCT LIST  /-----*/
-
-/*----/  BEGIN DELETE PRODUCT  /-----*/
-const deleteQuery = useMutation({
-  mutationFn: fetchDelete,
-  onError: (error)=>{
-     //Khi xu  ly thanh cong thi can lam gi
-     console.log('error', error);
-     sendMessage({msg: 'Delete error', type: 'error'})
-  },
-  onSuccess: ()=>{
-    //Khi xu  ly thanh cong thi can lam gi
-    sendMessage({msg: 'Delete success', type: 'success'})
-    console.log('success');
-    //Làm tươi lại danh sách
-     queryClient.invalidateQueries({ queryKey: ['products', int_page, int_limit ] })
-  }
-})
-/*----/  END DELETE PRODUCT  /-----*/
-/*----/  BEGIN ADD PRODUCT  /-----*/
-
-const queryCategories = useQuery({
-  queryKey: ['categories'],
-  queryFn: ()=>fetchCategories()
-
-})
-console.log('<<=== 🚀 queryCategories.data ===>>',queryCategories.data);
-const queryBrands = useQuery({
-  queryKey: ['brands'],
-  queryFn: ()=>fetchBrands()
-})
-
-
-console.log('<<=== 🚀 queryBrands.data ===>>',queryBrands.data); 
-const [fileList, setFileList] = useState<UploadFile[]>([]);
-const [isModalAddOpen,setIsModalAddOpen] = useState(false);
-const [formAdd] = Form.useForm();
-const handleModalAddOk = () => {
-  //Khi nhấn nút OK tren modal thì submit Form bên trong
-    formAdd.submit();
-  };
-
-  const mutationAddProduct = useMutation({
+  // === MUTATIONS ===
+  const createMutation = useMutation({
     mutationFn: fetchCreate,
-    onError: ()=>{
-      sendMessage({msg: 'Add error', type: 'error'})
+    onSuccess: () => {
+      message.success("✅ Product added successfully!");
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      setIsModalFormOpen(false);
+      setFormValues({});
     },
-    onSuccess: ()=>{
-      sendMessage({msg: 'Add success', type: 'success'})
-      //tắt modal
-      setIsModalAddOpen(false);
-      //Làm tươi danh sách
-       queryClient.invalidateQueries({ queryKey: ['products', int_page, int_limit ] })
-      //reset form về rỗng lại
-      formAdd.resetFields();
-    }
-  })
+    onError: (err: any) => message.error(err.message || "Error adding product"),
+  });
 
-  const handleModalAddCancel = () => {
-    setIsModalAddOpen(false);
+  const updateMutation = useMutation({
+    mutationFn: updateData,
+    onSuccess: () => {
+      message.success("✅ Product updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      setIsModalFormOpen(false);
+      setEditingProduct(null);
+      setFormValues({});
+    },
+    onError: (err: any) =>
+      message.error(err.message || "Error updating product"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: fetchDelete,
+    onSuccess: () => {
+      message.success("🗑️ Product deleted successfully!");
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (err: any) =>
+      message.error(err.message || "Error deleting product"),
+  });
+
+  // === HANDLERS ===
+  const handleSearch = () => {
+    setPage(1);
+    queryClient.invalidateQueries({ queryKey: ["products"] });
   };
-  const onFinishAdd = async (values: Record<string, string | number | Blob>) => {
-    console.log('<<=== 🚀 values ===>>',values);
-    if (fileList.length === 0) {
-      message.error('Vui lòng chọn file trước khi tải lên.');
+
+  const handleReload = () => {
+    setKeyword("");
+    queryClient.invalidateQueries({ queryKey: ["products"] });
+  };
+
+  const handleViewDetail = (record: ProductType) => {
+    setSelectedProduct(record);
+    setIsModalDetailOpen(true);
+  };
+
+  const handleEdit = (record: ProductType) => {
+    setEditingProduct(record);
+    setFormValues(record);
+    setIsModalFormOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    Modal.confirm({
+      title: "Confirm deletion",
+      content: "Are you sure you want to delete this product?",
+      okText: "Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: () => deleteMutation.mutate(id),
+    });
+  };
+
+  const handleSubmitForm = () => {
+    if (!formValues.product_name || !formValues.price) {
+      message.warning("⚠️ Please fill all required fields!");
       return;
     }
 
-    const formData = new FormData();
-    // Lặp qua tất cả các trường trong values và thêm chúng vào formData
-    Object.entries(values).forEach(([key, value]) => {
-      formData.append(key, value instanceof Blob ? value : String(value));
-    });
-
-    fileList.forEach((file) => {
-      formData.append('file', file as FileType);
-    });
-
-    console.log(formData)
-
-    await mutationAddProduct.mutateAsync(formData);
-
-  };
-
-  const uploadProps: UploadProps = {
-    onRemove: (file) => {
-      const index = fileList.indexOf(file);
-      const newFileList = fileList.slice();
-      newFileList.splice(index, 1);
-      setFileList(newFileList);
-    },
-    beforeUpload: (file) => {
-      setFileList([file]);  // Chỉ chọn một file, nếu cần nhiều file thì sử dụng `setFileList([...fileList, file])`
-      return false;  // Tắt upload tự động
-    },
-    fileList,
-  };
-
-  const onFinishFailed = (errorInfo: string) => {
-    console.log('Failed:', errorInfo);
-  };
-
-  const mutationUpdateProduct = useMutation({
-    mutationFn: updateData,
-    onError: ()=>{
-      sendMessage({msg: 'Update error', type: 'error'})
-    },
-    onSuccess: ()=>{
-      sendMessage({msg: 'Update success', type: 'success'})
-      //tắt modal
-      setIsModalEditOpen(false);
-      //Làm tươi danh sách
-       queryClient.invalidateQueries({ queryKey: ['products', int_page, int_limit ] })
-      
+    if (editingProduct) {
+      updateMutation.mutate({
+        id: editingProduct._id!,
+        formData: formValues as ProductType,
+      });
+    } else {
+      createMutation.mutate(formValues as ProductType);
     }
-  })
-  
-/*----/  END ADD PRODUCT  /-----*/
- 
-/*----/  BEGIN EDIT PRODUCT  /-----*/
-const [isModalEditOpen,setIsModalEditOpen] = useState(false);
-const [formEdit] = Form.useForm();
-const handleModalEditOk = () => {
-  formEdit.submit();
-}
-
-  const handleModalEditCancel = () => {
-    setIsModalEditOpen(false);
   };
-  const onFinishEdit = async (values: ProductType) => {
-    console.log('<<=== 🚀 values ===>>',values);
-    await mutationUpdateProduct.mutateAsync({
-      id: formEdit.getFieldValue('_id'), 
-      formData: values
-    })
 
-
-  };
-  const onFinishEditFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
-  };
-  
-/*----/  END EDIT PRODUCT  /-----*/
-
-const columns: TableProps<ProductType>['columns'] = [
-   {
-    title: 'Thumbnail',
-    key: 'thumbnail',
-    dataIndex: 'thumbnail',
-    render: (_, record) => {
-      let thumbnailUrl = record.thumbnail;
-      console.log('<<=== 🚀 thumbnailUrl ===>>',thumbnailUrl);
-      // detect if backend prefix is followed by another https:// URL
-      if (thumbnailUrl.startsWith("http://localhost:9000/https://")) {
-        thumbnailUrl = thumbnailUrl.replace("http://localhost:9000/", "");
-      }
-      return (
-        <img
-          height={40}
-          width={40}
-          src={thumbnailUrl}
-          alt={record.product_name}
-        />
-      );
+  // === TABLE COLUMNS ===
+  const columns = [
+    {
+      title: "Image",
+      dataIndex: "thumbnail",
+      key: "thumbnail",
+      render: (url: string) =>
+        url ? (
+          <Image src={url} alt="thumbnail" width={50} />
+        ) : (
+          <Tag color="default">No Image</Tag>
+        ),
     },
-  },
-  {
-    title: 'Name',
-    dataIndex: 'product_name',
-    key: 'product_name',
-    render: (text) => <a>{text}</a>,
-  },
-  {
-    title: 'Price',
-    dataIndex: 'price',
-    key: 'price',
-  },
-  {
-    title: 'Stock',
-    dataIndex: 'stock',
-    key: 'stock',
-  },
- 
-  {
-    title: 'Action',
-    key: 'action',
-    render: (_, record) => (
-      <Space size="middle">
-        <Button onClick={()=>{
-          console.log(record._id);
-          setIsModalEditOpen(true);
-          //Đổ dữ liệu vào form
-          formEdit.setFieldsValue({
-            ...record,
-            category_id: record.category_id._id,
-            brand_id: record.brand_id._id
-          });
-        }}>Edit</Button>
-        {/* Them phan quyen Action Xoa */}
-        <ActionHasRoles requiredRoles={['admin']}>
-              <Popconfirm
-              title="Delete the task"
-              description="Are you sure to delete this task?"
-              onConfirm={async()=>{
-                console.log(record._id)
-                await deleteQuery.mutateAsync(record._id)
-              }}
-              onCancel={()=>{
-                console.log('Huy');
-              }}
-              okText="Yes"
-              cancelText="No"
-            >
-              <Button  color="danger" variant="outlined">Delete</Button>
-            </Popconfirm>
-        </ActionHasRoles>
-       
-        
-      </Space>
-    ),
-  },
-];
+    {
+      title: "Product Name",
+      dataIndex: "product_name",
+      key: "product_name",
+      render: (text: string) => <b>{text}</b>,
+    },
+    {
+      title: "Price",
+      dataIndex: "price",
+      key: "price",
+      render: (price: number) => `$${price.toFixed(2)}`,
+    },
+    {
+      title: "Stock",
+      dataIndex: "stock",
+      key: "stock",
+    },
+    {
+      title: "Category",
+      dataIndex: ["category_id", "category_name"],
+      key: "category_id",
+      render: (name: string) => name || <Tag>No Category</Tag>,
+    },
+    {
+      title: "Brand",
+      dataIndex: ["brand_id", "brand_name"],
+      key: "brand_id",
+      render: (name: string) => name || <Tag>No Brand</Tag>,
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_: any, record: ProductType) => (
+        <Space>
+          <Button icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>
+            Detail
+          </Button>
+          <Button type="primary" onClick={() => handleEdit(record)}>
+            Edit
+          </Button>
+          <Button danger onClick={() => handleDelete(record._id!)}>
+            Delete
+          </Button>
+        </Space>
+      ),
+    },
+  ];
 
-  console.log('<<=== 🚀 fileList ===>>',fileList);
+  return (
+    <>
+      {/* HEADER */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 16,
+        }}
+      >
+        <Card>
+          <Space align="center" size="middle">
+            <TrademarkOutlined style={{ fontSize: 32, color: "#52c41a" }} />
+            <div>
+              <Title level={2} style={{ margin: 0 }}>
+                Products Management
+              </Title>
+              <Typography.Text type="secondary">
+                View and manage all products in the system
+              </Typography.Text>
+            </div>
+          </Space>
+        </Card>
+        <Space>
+          <Input
+            placeholder="Search products..."
+            prefix={<SearchOutlined />}
+            style={{ width: 300 }}
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onPressEnter={handleSearch}
+            allowClear
+          />
+          <Button
+            icon={<PlusOutlined />}
+            type="primary"
+            onClick={() => {
+              setEditingProduct(null);
+              setFormValues({});
+              setIsModalFormOpen(true);
+            }}
+          >
+            Add Product
+          </Button>
+          <Button icon={<ReloadOutlined />} onClick={handleReload}>
+            Refresh
+          </Button>
+        </Space>
+      </div>
 
-  return (<>
-  <Flex justify='space-between' align='center'>
-      <h1>product List</h1>
-      <Button onClick={()=>setIsModalAddOpen(true)} type="primary">Thêm Product</Button>
-  </Flex>
-  <Table<ProductType> key={'_id'} loading={queryProducts.isLoading} columns={columns} dataSource={queryProducts.data?.products || []} />
-  <div style={{ textAlign: 'right', marginTop: 30 }}>
-            <Pagination
-              defaultCurrent={1}
-              total={queryProducts.data?.totalRecords || 0} // Example total, replace with actual total from API
-              showSizeChanger={false}
-              pageSize={int_limit}
-              onChange={(page, pageSize)=>{
-                  navigate(`?page=${page}&limit=${pageSize}`)
-              }}
-              showQuickJumper
-              showTotal={(total) => `Total ${total} items`}
-            />
-          </div>
-      {/* MODAL THEM MOI */}
+      {/* TABLE */}
+      <Table
+        rowKey="_id"
+        loading={isLoading}
+        columns={columns}
+        dataSource={products}
+        pagination={false}
+      />
+
+      {/* PAGINATION */}
+<div style={{ textAlign: "right", marginTop: 20 }}>
+  <Pagination
+    current={page}
+    total={totalRecords}
+    pageSize={limit}
+    showSizeChanger={false}
+    showQuickJumper   // ✅ Thêm dòng này để hiển thị ô nhập số trang
+    onChange={(p) => {
+      setPage(p);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    }}
+    showTotal={(total) => `Total ${total} products`}
+  />
+</div>
+
+      {/* MODAL - DETAIL */}
       <Modal
-        title="Basic Modal"
-        closable={{ 'aria-label': 'Custom Close Button' }}
-        open={isModalAddOpen}
-        onOk={handleModalAddOk}
-        onCancel={handleModalAddCancel}
+        title={`Product Detail - ${selectedProduct?.product_name}`}
+        open={isModalDetailOpen}
+        onCancel={() => {
+          setIsModalDetailOpen(false);
+          setSelectedProduct(null);
+        }}
+        footer={<Button onClick={() => setIsModalDetailOpen(false)}>Close</Button>}
+        width={700}
       >
-        <div style={{
-          maxHeight: 350,
-          overflowY: 'auto'
-        }}>
-                 <Form
-        name='formAdd'
-      form={formAdd}
-      layout="vertical"
-      onFinish={onFinishAdd}
-      onFinishFailed={onFinishFailed}
-      initialValues={{}}
-    >
-      <Form.Item
-        label="Product Name"
-        name="product_name"
-        rules={[
-          { required: true, message: 'Please input the product name!' },
-          { min: 3, message: 'Product name must be at least 3 characters!' },
-          { max: 255, message: 'Product name cannot exceed 255 characters!' },
-        ]}
-      >
-        <Input placeholder="Enter product name" />
-      </Form.Item>
-
-      <Form.Item
-        label="Description"
-        name="description"
-        rules={[
-          { max: 500, message: 'Description cannot exceed 500 characters!' },
-        ]}
-      >
-        <Input.TextArea rows={4} placeholder="Enter product description" />
-      </Form.Item>
-
-      <Form.Item
-        label="Price"
-        name="price"
-        rules={[
-          { required: true, message: 'Please input the price!' },
-          { type: 'number', min: 0, message: 'Price cannot be negative!' },
-        ]}
-      >
-        <InputNumber
-          style={{ width: '100%' }}
-          placeholder="Enter price"
-          min={0}
-        />
-      </Form.Item>
-
-      <Form.Item
-        label="Discount (%)"
-        name="discount"
-        rules={[
-          { required: true, message: 'Please input the discount!' },
-          { type: 'number', min: 0, message: 'Discount cannot be negative!' },
-          { type: 'number', max: 70, message: 'Discount cannot exceed 70%!' },
-        ]}
-      >
-        <InputNumber
-          style={{ width: '100%' }}
-          placeholder="Enter discount percentage"
-          min={0}
-          max={70}
-        />
-      </Form.Item>
-
-      <Form.Item
-        label="Stock"
-        name="stock"
-        rules={[
-          { required: true, message: 'Please input the stock quantity!' },
-          { type: 'number', min: 0, message: 'Stock cannot be negative!' },
-        ]}
-      >
-        <InputNumber
-          style={{ width: '100%' }}
-          placeholder="Enter stock quantity"
-          min={0}
-        />
-      </Form.Item>
-
-      <Form.Item
-        label="Model Year"
-        name="model_year"
-        rules={[
-          { required: true, message: 'Please input the model year!' },
-          {
-            type: 'number',
-            min: 1900,
-            message: 'Year cannot be earlier than 1900!',
-          },
-          {
-            type: 'number',
-            max: new Date().getFullYear(),
-            message: `Year cannot be later than ${new Date().getFullYear()}!`,
-          },
-        ]}
-      >
-        <InputNumber
-          style={{ width: '100%' }}
-          placeholder="Enter model year"
-          min={1900}
-          max={new Date().getFullYear()}
-        />
-      </Form.Item>
-
-      <Form.Item
-        label="Category"
-        name="category_id"
-        rules={[{ required: false, message: 'Please select a category!' }]}
-      >
-        <Select
-            options={
-              queryCategories.data &&
-              queryCategories.data.map((c) => {
-                return {
-                  value: c._id,
-                  label: c.category_name,
-                };
-              })
-            }
-          />
-      </Form.Item>
-
-      <Form.Item
-        label="Brand"
-        name="brand_id"
-        rules={[{ required: false, message: 'Please select a brand!' }]}
-      >
-       <Select
-            options={
-              queryBrands.data &&
-              queryBrands.data.map((b: { _id: any; brand_name: any; }) => {
-                return {
-                  value: b._id,
-                  label: b.brand_name,
-                };
-              })
-            }
-          />
-      </Form.Item>
-
-      <Form.Item
-        label="Slug"
-        name="slug"
-        rules={[
-          { required: true, message: 'Please input the slug!' },
-          { min: 3, message: 'Slug must be at least 3 characters!' },
-          { max: 255, message: 'Slug cannot exceed 255 characters!' },
-        ]}
-      >
-        <Input placeholder="Enter product slug" />
-      </Form.Item>
-
-      <Form.Item
-        label="Thumbnail URL"
-        name="thumbnail"
-        // rules={[
-        //   { max: 255, message: 'Thumbnail URL cannot exceed 255 characters!' },
-        // ]}
-      >
-        {/* <Input placeholder="Enter thumbnail URL" /> */}
-        <Upload
-          {...uploadProps}
-        >
-          <Button icon={<UploadOutlined />}>Select Thumbnail</Button>
-        </Upload>
-      </Form.Item>
-
-      
-    </Form>
-        </div>
-       
+        {selectedProduct && (
+          <Space direction="vertical" style={{ width: "100%" }}>
+            <Image
+              src={selectedProduct.thumbnail}
+              alt={selectedProduct.product_name}
+              width={120}
+            />
+            <p>
+              <b>Name:</b> {selectedProduct.product_name}
+            </p>
+            <p>
+              <b>Price:</b> ${selectedProduct.price}
+            </p>
+            <p>
+              <b>Stock:</b> {selectedProduct.stock}
+            </p>
+            <p>
+              <b>Category:</b>{" "}
+              {selectedProduct.category_id?.category_name || "No category"}
+            </p>
+            <p>
+              <b>Brand:</b>{" "}
+              {selectedProduct.brand_id?.brand_name || "No brand"}
+            </p>
+          </Space>
+        )}
       </Modal>
 
-        {/* MODAL UPDATE */}
-         <Modal
-        title="Update Product"
-        closable={{ 'aria-label': 'Custom Close Button' }}
-        open={isModalEditOpen}
-        onOk={handleModalEditOk}
-        onCancel={handleModalEditCancel}
+      {/* MODAL - ADD/EDIT */}
+      <Modal
+        title={editingProduct ? "Edit Product" : "Add Product"}
+        open={isModalFormOpen}
+        onCancel={() => {
+          setIsModalFormOpen(false);
+          setEditingProduct(null);
+          setFormValues({});
+        }}
+        onOk={handleSubmitForm}
+        confirmLoading={
+          createMutation.isLoading || updateMutation.isLoading
+        }
       >
-        <div style={{
-          maxHeight: 350,
-          overflowY: 'auto'
-        }}>
-                 <Form
-        name='formEdit'
-      form={formEdit}
-      layout="vertical"
-      onFinish={onFinishEdit}
-      onFinishFailed={onFinishEditFailed}
-    >
-      <Form.Item
-        label="Product Name"
-        name="product_name"
-        rules={[
-          { required: true, message: 'Please input the product name!' },
-          { min: 3, message: 'Product name must be at least 3 characters!' },
-          { max: 255, message: 'Product name cannot exceed 255 characters!' },
-        ]}
-      >
-        <Input placeholder="Enter product name" />
-      </Form.Item>
-
-      <Form.Item
-        label="Description"
-        name="description"
-        rules={[
-          { max: 500, message: 'Description cannot exceed 500 characters!' },
-        ]}
-      >
-        <Input.TextArea rows={4} placeholder="Enter product description" />
-      </Form.Item>
-
-      <Form.Item
-        label="Price"
-        name="price"
-        rules={[
-          { required: true, message: 'Please input the price!' },
-          { type: 'number', min: 0, message: 'Price cannot be negative!' },
-        ]}
-      >
-        <InputNumber
-          style={{ width: '100%' }}
-          placeholder="Enter price"
-          min={0}
-        />
-      </Form.Item>
-
-      <Form.Item
-        label="Discount (%)"
-        name="discount"
-        rules={[
-          { required: true, message: 'Please input the discount!' },
-          { type: 'number', min: 0, message: 'Discount cannot be negative!' },
-          { type: 'number', max: 70, message: 'Discount cannot exceed 70%!' },
-        ]}
-      >
-        <InputNumber
-          style={{ width: '100%' }}
-          placeholder="Enter discount percentage"
-          min={0}
-          max={70}
-        />
-      </Form.Item>
-
-      <Form.Item
-        label="Stock"
-        name="stock"
-        rules={[
-          { required: true, message: 'Please input the stock quantity!' },
-          { type: 'number', min: 0, message: 'Stock cannot be negative!' },
-        ]}
-      >
-        <InputNumber
-          style={{ width: '100%' }}
-          placeholder="Enter stock quantity"
-          min={0}
-        />
-      </Form.Item>
-
-      <Form.Item
-        label="Model Year"
-        name="model_year"
-        rules={[
-          { required: true, message: 'Please input the model year!' },
-          {
-            type: 'number',
-            min: 1900,
-            message: 'Year cannot be earlier than 1900!',
-          },
-          {
-            type: 'number',
-            max: new Date().getFullYear(),
-            message: `Year cannot be later than ${new Date().getFullYear()}!`,
-          },
-        ]}
-      >
-        <InputNumber
-          style={{ width: '100%' }}
-          placeholder="Enter model year"
-          min={1900}
-          max={new Date().getFullYear()}
-        />
-      </Form.Item>
-
-      <Form.Item
-        label="Category"
-        name="category_id"
-        rules={[{ required: false, message: 'Please select a category!' }]}
-      >
-        <Select
-            options={
-              queryCategories.data &&
-              queryCategories.data.map((c) => {
-                return {
-                  value: c._id,
-                  label: c.category_name,
-                };
-              })
+        <Space direction="vertical" style={{ width: "100%" }}>
+          <Input
+            placeholder="Product name"
+            value={formValues.product_name}
+            onChange={(e) =>
+              setFormValues({ ...formValues, product_name: e.target.value })
             }
           />
-      </Form.Item>
-
-      <Form.Item
-        label="Brand"
-        name="brand_id"
-        rules={[{ required: false, message: 'Please select a brand!' }]}
-      >
-       <Select
-            options={
-              queryBrands.data &&
-              queryBrands.data.map((b: { _id: any; brand_name: any; }) => {
-                return {
-                  value: b._id,
-                  label: b.brand_name,
-                };
-              })
+          <Input
+            placeholder="Thumbnail URL"
+            value={formValues.thumbnail}
+            onChange={(e) =>
+              setFormValues({ ...formValues, thumbnail: e.target.value })
             }
           />
-      </Form.Item>
-
-      <Form.Item
-        label="Slug"
-        name="slug"
-        rules={[
-          { required: true, message: 'Please input the slug!' },
-          { min: 3, message: 'Slug must be at least 3 characters!' },
-          { max: 255, message: 'Slug cannot exceed 255 characters!' },
-        ]}
-      >
-        <Input placeholder="Enter product slug" />
-      </Form.Item>
-
-      <Form.Item
-        label="Thumbnail URL"
-        name="thumbnail"
-        rules={[
-          { max: 255, message: 'Thumbnail URL cannot exceed 255 characters!' },
-        ]}
-      >
-        <Input placeholder="Enter thumbnail URL" />
-      </Form.Item>
-
-       <Form.Item
-        label="ID"
-        name="_id"
-      >
-        <Input hidden />
-      </Form.Item>
-    </Form>
-        </div>
-       
+          <Input
+            placeholder="Price"
+            type="number"
+            value={formValues.price}
+            onChange={(e) =>
+              setFormValues({ ...formValues, price: Number(e.target.value) })
+            }
+          />
+          <Input
+            placeholder="Stock"
+            type="number"
+            value={formValues.stock}
+            onChange={(e) =>
+              setFormValues({ ...formValues, stock: Number(e.target.value) })
+            }
+          />
+        </Space>
       </Modal>
-  </>)
+    </>
+  );
 };
 
 export default ProductsPage;
