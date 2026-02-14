@@ -31,7 +31,7 @@ export const generatePath = (key: string) => {
 
 export const routes: RouteItem[] = [
   ...routesDashboard, //đăng ký route dashboard
-  ...routesCustomers, 
+  // ...routesCustomers, 
   ...routesOrders,
   ...routesAuth,
   ...routesProducts,

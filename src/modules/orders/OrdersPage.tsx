@@ -39,7 +39,7 @@ const OrdersPage = () => {
   const [selectedOrder, setSelectedOrder] = useState<OrderType | null>(null);
 
   // ==========================
-  // ✅ DEFAULT: status = Pending (1)
+  // DEFAULT: status = Pending (1)
   // ==========================
   const [statusFilter, setStatusFilter] = useState<number | undefined>(
     statusParam ? parseInt(statusParam) : 1
